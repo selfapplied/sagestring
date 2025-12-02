@@ -1,18 +1,49 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
-*.egg
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-.env
+
+# Generated plots and data
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+antclock_geometry.png
+antclock_trajectory.png
+topology_evolution.png
+coupling_law_evolution.png
+categorical_shadow_structure.png
+critical_line_analogue.png
+critical_line_evidence.png
+
+# IDE files
+.vscode/
+.idea/
 *.swp
 *.swo
-*~
-.DS_Store
 
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Server readiness files
+.server_ready
+
+# Matplotlib cache
+.matplotlib_cache/

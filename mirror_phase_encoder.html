@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Referential Sobel-Bounded Objects – Live SVG Camera</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #1a1a1a;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #00ffff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button:active {
+            background: #777;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .visualization {
+            flex: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            padding: 1rem;
+        }
+
+        svg {
+            max-width: 100%;
+            max-height: 100%;
+            border: 1px solid #333;
+            background: #000;
+        }
+
+        .info-panel {
+            flex: 1;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .legend {
+            margin-bottom: 2rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            display: inline-block;
+        }
+
+        .stats {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            color: #ff6b6b;
+            font-style: italic;
+        }
+
+        /* Hidden elements */
+        #video, #canvas {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Self-Referential Sobel-Bounded Objects – Live SVG Camera</h1>
+        <div class="controls">
+            <button id="startBtn">Start</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="visualization">
+            <svg id="svgGrid" viewBox="0 0 800 600">
+                <!-- SVG elements will be created dynamically -->
+            </svg>
+        </div>
+
+        <div class="info-panel">
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="legend-dot" style="background: #00ffff;"></span>
+                    Fixed sector: {0,1,4,5,6,9}
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background: #ff9500;"></span>
+                    Osc28 sector: {2,8}
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background: #ff0080;"></span>
+                    Osc37 sector: {3,7}
+                </div>
+            </div>
+
+            <div id="stats" class="stats">
+                Status: Ready to start
+
+                Grid: 24×18 cells
+
+                Stats will update live...
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden video and canvas for processing -->
+    <video id="video" autoplay muted></video>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // Constants
+        const GRID_WIDTH = 24;
+        const GRID_HEIGHT = 18;
+        const CELL_SIZE = 30;
+        const SVG_WIDTH = GRID_WIDTH * CELL_SIZE;
+        const SVG_HEIGHT = GRID_HEIGHT * CELL_SIZE;
+
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const svg = document.getElementById('svgGrid');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statsDiv = document.getElementById('stats');
+
+        // Canvas context
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let animationId = null;
+        let stream = null;
+        let cells = [];
+        let stats = {
+            totalCells: GRID_WIDTH * GRID_HEIGHT,
+            fixedCount: 0,
+            osc28Count: 0,
+            osc37Count: 0,
+            frameCount: 0
+        };
+
+        // Sector definitions
+        const SECTORS = {
+            FIXED: { digits: new Set([0, 1, 4, 5, 6, 9]), color: '#00ffff', name: 'Fixed' },
+            OSC28: { digits: new Set([2, 8]), color: '#ff9500', name: 'Osc28' },
+            OSC37: { digits: new Set([3, 7]), color: '#ff0080', name: 'Osc37' }
+        };
+
+        // Self-referential Sobel-bounded object model
+        let objects = [];
+        let nextObjectId = 0;
+
+        // Object data structure
+        class SelfObject {
+            constructor(id, region, brightness, phaseGrid) {
+                this.id = id;
+                this.R = region; // {minX, maxX, minY, maxY} - bounding box
+                this.B = brightness; // 2D array of brightness values within region
+                this.phaseGrid = phaseGrid; // 2D array of sector types within region
+                this.S = null; // Sobel magnitude (computed lazily)
+                this.E = null; // Boundary edges (computed lazily)
+                this.C = this.computeCentroid(); // Centroid {x, y}
+                this.Phi = this.computePhaseVector(); // {fixed: count, osc28: count, osc37: count}
+                this.Theta = { // Internal parameters
+                    tau: 0.5, // Edge threshold multiplier
+                    scale: 1.0, // Size scaling factor
+                    phase_bias: 0, // Phase adjustment
+                    stability: 0 // How stable this object has been (0-1)
+                };
+                this.age = 0; // Frames this object has existed
+                this.lastRegion = null; // Previous region for stability calculation
+            }
+
+            // Compute centroid from current region
+            computeCentroid() {
+                if (!this.R) return {x: 0, y: 0};
+                return {
+                    x: (this.R.minX + this.R.maxX) / 2,
+                    y: (this.R.minY + this.R.maxY) / 2
+                };
+            }
+
+            // Compute phase vector from sector distribution
+            computePhaseVector() {
+                let counts = {fixed: 0, osc28: 0, osc37: 0};
+                if (this.phaseGrid) {
+                    for (let row of this.phaseGrid) {
+                        for (let sector of row) {
+                            if (sector === SECTORS.FIXED) counts.fixed++;
+                            else if (sector === SECTORS.OSC28) counts.osc28++;
+                            else if (sector === SECTORS.OSC37) counts.osc37++;
+                        }
+                    }
+                }
+                return counts;
+            }
+
+            // Get width and height of region
+            getWidth() { return this.R.maxX - this.R.minX; }
+            getHeight() { return this.R.maxY - this.R.minY; }
+            getArea() { return this.getWidth() * this.getHeight(); }
+
+            // Check if point is inside region
+            contains(x, y) {
+                return x >= this.R.minX && x <= this.R.maxX &&
+                       y >= this.R.minY && y <= this.R.maxY;
+            }
+
+            // Compute self-boundary using local Sobel and adaptive thresholding
+            computeSelfBoundary() {
+                if (!this.B || this.B.length === 0) return;
+
+                const height = this.B.length;
+                const width = this.B[0].length;
+
+                // Compute Sobel magnitude within region
+                this.S = computeSobelMagnitude(this.B, width, height);
+
+                // Compute local statistics for adaptive thresholding
+                const sobelValues = [];
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        sobelValues.push(this.S[y][x]);
+                    }
+                }
+
+                const mean = sobelValues.reduce((a, b) => a + b, 0) / sobelValues.length;
+                const std = Math.sqrt(
+                    sobelValues.reduce((sum, val) => sum + (val - mean) ** 2, 0) / sobelValues.length
+                );
+
+                // Adaptive threshold based on object's parameters
+                const tau = mean + this.Theta.tau * std;
+
+                // Extract boundary edges
+                this.E = [];
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        if (this.S[y][x] > tau) {
+                            this.E.push({
+                                x: this.R.minX + x,
+                                y: this.R.minY + y,
+                                magnitude: this.S[y][x]
+                            });
+                        }
+                    }
+                }
+
+                return this.E;
+            }
+
+            // Update centroid based on boundary edges
+            updateCentroidFromEdges() {
+                if (!this.E || this.E.length === 0) return;
+
+                let sumX = 0, sumY = 0;
+                for (const edge of this.E) {
+                    sumX += edge.x;
+                    sumY += edge.y;
+                }
+
+                this.C = {
+                    x: sumX / this.E.length,
+                    y: sumY / this.E.length
+                };
+            }
+
+            // Update region based on boundary edges and current parameters
+            updateRegionFromBoundaries() {
+                if (!this.E || this.E.length === 0) return;
+
+                // Store previous region for stability calculation
+                this.lastRegion = {...this.R};
+
+                // Compute spread of boundary edges
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+
+                for (const edge of this.E) {
+                    minX = Math.min(minX, edge.x);
+                    maxX = Math.max(maxX, edge.x);
+                    minY = Math.min(minY, edge.y);
+                    maxY = Math.max(maxY, edge.y);
+                }
+
+                const currentWidth = maxX - minX;
+                const currentHeight = maxY - minY;
+                const currentScale = Math.sqrt(currentWidth * currentHeight);
+
+                // Update scale based on edge spread and object parameters
+                const targetScale = currentScale * this.Theta.scale;
+                const radius = Math.max(targetScale / 2, 2); // Minimum radius
+
+                // Create new region as neighborhood around centroid
+                this.R = {
+                    minX: Math.max(0, Math.floor(this.C.x - radius)),
+                    maxX: Math.min(GRID_WIDTH - 1, Math.ceil(this.C.x + radius)),
+                    minY: Math.max(0, Math.floor(this.C.y - radius)),
+                    maxY: Math.min(GRID_HEIGHT - 1, Math.ceil(this.C.y + radius))
+                };
+
+                // Update stability metric
+                if (this.lastRegion) {
+                    const dx = this.C.x - (this.lastRegion.minX + this.lastRegion.maxX) / 2;
+                    const dy = this.C.y - (this.lastRegion.minY + this.lastRegion.maxY) / 2;
+                    const movement = Math.sqrt(dx * dx + dy * dy);
+                    this.Theta.stability = Math.max(0, 1 - movement / 10); // Decay stability with movement
+                }
+            }
+
+            // Extract brightness and phase data for the updated region
+            extractRegionData(globalBrightness, globalPhase) {
+                const width = this.getWidth();
+                const height = this.getHeight();
+
+                this.B = Array(height).fill().map(() => Array(width).fill(0));
+                this.phaseGrid = Array(height).fill().map(() => Array(width).fill(null));
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const globalX = this.R.minX + x;
+                        const globalY = this.R.minY + y;
+
+                        if (globalX >= 0 && globalX < GRID_WIDTH && globalY >= 0 && globalY < GRID_HEIGHT) {
+                            this.B[y][x] = globalBrightness[globalY][globalX];
+                            this.phaseGrid[y][x] = globalPhase[globalY][globalX];
+                        }
+                    }
+                }
+
+                // Update phase vector
+                this.Phi = this.computePhaseVector();
+
+                // Apply phase feedback to adjust parameters
+                this.applyPhaseFeedback();
+            }
+
+            // Adjust Theta parameters based on Phi sector mix
+            applyPhaseFeedback() {
+                const total = this.Phi.fixed + this.Phi.osc28 + this.Phi.osc37;
+                if (total === 0) return;
+
+                const fixedRatio = this.Phi.fixed / total;
+                const oscRatio = (this.Phi.osc28 + this.Phi.osc37) / total;
+
+                // Fixed-heavy objects become more conservative/stable
+                if (fixedRatio > 0.6) {
+                    this.Theta.tau = Math.min(1.0, this.Theta.tau + 0.05); // Higher threshold
+                    this.Theta.scale = Math.max(0.8, this.Theta.scale - 0.02); // Shrink slightly
+                    this.Theta.phase_bias = Math.max(-0.5, this.Theta.phase_bias - 0.01); // Bias toward stability
+                }
+                // Oscillator-heavy objects become more excitable
+                else if (oscRatio > 0.4) {
+                    this.Theta.tau = Math.max(0.1, this.Theta.tau - 0.05); // Lower threshold
+                    this.Theta.scale = Math.min(1.3, this.Theta.scale + 0.02); // Grow slightly
+                    this.Theta.phase_bias = Math.min(0.5, this.Theta.phase_bias + 0.01); // Bias toward change
+                }
+                // Mixed objects drift toward their dominant phase
+                else {
+                    // Gradual drift based on which oscillator dominates
+                    if (this.Phi.osc28 > this.Phi.osc37) {
+                        this.Theta.phase_bias += 0.005;
+                    } else if (this.Phi.osc37 > this.Phi.osc28) {
+                        this.Theta.phase_bias -= 0.005;
+                    }
+                }
+
+                // Clamp parameters to reasonable ranges
+                this.Theta.tau = Math.max(0.1, Math.min(2.0, this.Theta.tau));
+                this.Theta.scale = Math.max(0.5, Math.min(2.0, this.Theta.scale));
+                this.Theta.phase_bias = Math.max(-1.0, Math.min(1.0, this.Theta.phase_bias));
+            }
+
+            // Evolve object for one time step
+            evolve(globalBrightness, globalPhase) {
+                // Extract data for current region
+                this.extractRegionData(globalBrightness, globalPhase);
+
+                // Compute self-boundary
+                this.computeSelfBoundary();
+
+                // Update centroid from edges
+                this.updateCentroidFromEdges();
+
+                // Update region based on new boundaries
+                this.updateRegionFromBoundaries();
+
+                // Age the object
+                this.age++;
+            }
+        }
+
+        // Sobel operator for edge detection within a region
+        function computeSobelMagnitude(brightnessGrid, width, height) {
+            const sobelX = [
+                [-1, 0, 1],
+                [-2, 0, 2],
+                [-1, 0, 1]
+            ];
+            const sobelY = [
+                [-1, -2, -1],
+                [0, 0, 0],
+                [1, 2, 1]
+            ];
+
+            const magnitude = Array(height).fill().map(() => Array(width).fill(0));
+
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    let gx = 0, gy = 0;
+
+                    // Apply Sobel kernels
+                    for (let ky = -1; ky <= 1; ky++) {
+                        for (let kx = -1; kx <= 1; kx++) {
+                            const val = brightnessGrid[y + ky][x + kx];
+                            gx += val * sobelX[ky + 1][kx + 1];
+                            gy += val * sobelY[ky + 1][kx + 1];
+                        }
+                    }
+
+                    magnitude[y][x] = Math.sqrt(gx * gx + gy * gy);
+                }
+            }
+
+            return magnitude;
+        }
+
+        // Find connected regions in the phase grid to initialize objects
+        function findConnectedRegions(sectorGrid, brightnessGrid) {
+            const width = sectorGrid[0].length;
+            const height = sectorGrid.length;
+            const visited = Array(height).fill().map(() => Array(width).fill(false));
+            const regions = [];
+
+            function floodFill(x, y, targetSector) {
+                const region = {minX: x, maxX: x, minY: y, maxY: y, cells: []};
+
+                function dfs(cx, cy) {
+                    if (cx < 0 || cx >= width || cy < 0 || cy >= height ||
+                        visited[cy][cx] || sectorGrid[cy][cx] !== targetSector) {
+                        return;
+                    }
+
+                    visited[cy][cx] = true;
+                    region.cells.push({x: cx, y: cy, brightness: brightnessGrid[cy][cx]});
+                    region.minX = Math.min(region.minX, cx);
+                    region.maxX = Math.max(region.maxX, cx);
+                    region.minY = Math.min(region.minY, cy);
+                    region.maxY = Math.max(region.maxY, cy);
+
+                    // Check 8-connected neighbors
+                    dfs(cx-1, cy-1); dfs(cx, cy-1); dfs(cx+1, cy-1);
+                    dfs(cx-1, cy);                   dfs(cx+1, cy);
+                    dfs(cx-1, cy+1); dfs(cx, cy+1); dfs(cx+1, cy+1);
+                }
+
+                dfs(x, y);
+                return region.cells.length > 3 ? region : null; // Minimum size filter
+            }
+
+            // Find regions for each sector type
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (!visited[y][x]) {
+                        const sector = sectorGrid[y][x];
+                        const region = floodFill(x, y, sector);
+                        if (region) {
+                            regions.push({
+                                sector: sector,
+                                bounds: {
+                                    minX: region.minX, maxX: region.maxX,
+                                    minY: region.minY, maxY: region.maxY
+                                },
+                                cells: region.cells
+                            });
+                        }
+                    }
+                }
+            }
+
+            return regions;
+        }
+
+        // Initialize objects from phase grid
+        function initializeObjects(sectorGrid, brightnessGrid) {
+            const regions = findConnectedRegions(sectorGrid, brightnessGrid);
+            const newObjects = [];
+
+            for (const region of regions) {
+                // Extract brightness and phase grids for this region
+                const width = region.bounds.maxX - region.bounds.minX + 1;
+                const height = region.bounds.maxY - region.bounds.minY + 1;
+
+                const regionBrightness = Array(height).fill().map(() => Array(width).fill(0));
+                const regionPhase = Array(height).fill().map(() => Array(width).fill(null));
+
+                for (const cell of region.cells) {
+                    const localX = cell.x - region.bounds.minX;
+                    const localY = cell.y - region.bounds.minY;
+                    regionBrightness[localY][localX] = cell.brightness;
+                    regionPhase[localY][localX] = region.sector;
+                }
+
+                // Create object
+                const obj = new SelfObject(nextObjectId++, region.bounds, regionBrightness, regionPhase);
+                newObjects.push(obj);
+            }
+
+            return newObjects;
+        }
+
+        function initSVGGrid() {
+            svg.setAttribute('viewBox', `0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`);
+
+            // Create background grid (original mirror-phase visualization)
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', x * CELL_SIZE);
+                    rect.setAttribute('y', y * CELL_SIZE);
+                    rect.setAttribute('width', CELL_SIZE);
+                    rect.setAttribute('height', CELL_SIZE);
+                    rect.setAttribute('rx', 4);
+                    rect.setAttribute('fill', '#333');
+                    rect.setAttribute('opacity', 0.3);
+                    svg.appendChild(rect);
+                    cells.push(rect);
+                }
+            }
+
+            // Create container for object visualizations
+            const objectsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            objectsGroup.setAttribute('id', 'objectsGroup');
+            svg.appendChild(objectsGroup);
+        }
+
+        // Create SVG representation for an object
+        function createObjectSVG(obj) {
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            group.setAttribute('id', `object-${obj.id}`);
+            group.setAttribute('class', 'self-object');
+
+            // Boundary path
+            const boundaryPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            boundaryPath.setAttribute('class', 'object-boundary');
+            boundaryPath.setAttribute('fill', 'none');
+            boundaryPath.setAttribute('stroke', obj.phaseGrid && obj.phaseGrid[0] ? obj.phaseGrid[0][0].color : '#666');
+            boundaryPath.setAttribute('stroke-width', '2');
+            boundaryPath.setAttribute('opacity', '0.8');
+            group.appendChild(boundaryPath);
+
+            // Region outline (bounding box)
+            const regionRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            regionRect.setAttribute('class', 'object-region');
+            regionRect.setAttribute('fill', 'none');
+            regionRect.setAttribute('stroke', '#444');
+            regionRect.setAttribute('stroke-width', '1');
+            regionRect.setAttribute('stroke-dasharray', '2,2');
+            regionRect.setAttribute('opacity', '0.5');
+            group.appendChild(regionRect);
+
+            // Centroid marker
+            const centroid = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            centroid.setAttribute('class', 'object-centroid');
+            centroid.setAttribute('r', '4');
+            centroid.setAttribute('fill', '#ffffff');
+            centroid.setAttribute('stroke', '#000000');
+            centroid.setAttribute('stroke-width', '1');
+            group.appendChild(centroid);
+
+            // Phase composition indicator (small bars)
+            const phaseIndicator = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            phaseIndicator.setAttribute('class', 'phase-indicator');
+            group.appendChild(phaseIndicator);
+
+            // Create phase bars
+            const fixedBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            fixedBar.setAttribute('class', 'phase-fixed');
+            fixedBar.setAttribute('width', '3');
+            fixedBar.setAttribute('height', '20');
+            fixedBar.setAttribute('fill', SECTORS.FIXED.color);
+            phaseIndicator.appendChild(fixedBar);
+
+            const osc28Bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            osc28Bar.setAttribute('class', 'phase-osc28');
+            osc28Bar.setAttribute('width', '3');
+            osc28Bar.setAttribute('height', '20');
+            osc28Bar.setAttribute('fill', SECTORS.OSC28.color);
+            phaseIndicator.appendChild(osc28Bar);
+
+            const osc37Bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            osc37Bar.setAttribute('class', 'phase-osc37');
+            osc37Bar.setAttribute('width', '3');
+            osc37Bar.setAttribute('height', '20');
+            osc37Bar.setAttribute('fill', SECTORS.OSC37.color);
+            phaseIndicator.appendChild(osc37Bar);
+
+            // Stability indicator (glow effect)
+            const stabilityGlow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            stabilityGlow.setAttribute('class', 'stability-glow');
+            stabilityGlow.setAttribute('r', '6');
+            stabilityGlow.setAttribute('fill', 'none');
+            stabilityGlow.setAttribute('stroke', '#00ff00');
+            stabilityGlow.setAttribute('stroke-width', '2');
+            stabilityGlow.setAttribute('opacity', '0');
+            group.appendChild(stabilityGlow);
+
+            document.getElementById('objectsGroup').appendChild(group);
+            return group;
+        }
+
+        // Update SVG representation of an object
+        function updateObjectSVG(obj) {
+            let group = document.getElementById(`object-${obj.id}`);
+            if (!group) {
+                group = createObjectSVG(obj);
+            }
+
+            const boundaryPath = group.querySelector('.object-boundary');
+            const regionRect = group.querySelector('.object-region');
+            const centroid = group.querySelector('.object-centroid');
+            const phaseIndicator = group.querySelector('.phase-indicator');
+            const stabilityGlow = group.querySelector('.stability-glow');
+
+            // Update boundary path from edge points
+            if (obj.E && obj.E.length > 0) {
+                // Create simplified boundary by connecting edge points
+                const points = obj.E.slice(0, 20); // Limit points for performance
+                let pathData = `M ${points[0].x * CELL_SIZE + CELL_SIZE/2} ${points[0].y * CELL_SIZE + CELL_SIZE/2}`;
+                for (let i = 1; i < points.length; i++) {
+                    pathData += ` L ${points[i].x * CELL_SIZE + CELL_SIZE/2} ${points[i].y * CELL_SIZE + CELL_SIZE/2}`;
+                }
+                pathData += ' Z';
+                boundaryPath.setAttribute('d', pathData);
+
+                // Color based on dominant phase
+                const dominantPhase = obj.getDominantPhase();
+                boundaryPath.setAttribute('stroke', dominantPhase.color);
+            }
+
+            // Update region rectangle
+            regionRect.setAttribute('x', obj.R.minX * CELL_SIZE);
+            regionRect.setAttribute('y', obj.R.minY * CELL_SIZE);
+            regionRect.setAttribute('width', obj.getWidth() * CELL_SIZE);
+            regionRect.setAttribute('height', obj.getHeight() * CELL_SIZE);
+
+            // Update centroid
+            centroid.setAttribute('cx', obj.C.x * CELL_SIZE + CELL_SIZE/2);
+            centroid.setAttribute('cy', obj.C.y * CELL_SIZE + CELL_SIZE/2);
+
+            // Update phase indicator bars
+            const total = obj.Phi.fixed + obj.Phi.osc28 + obj.Phi.osc37;
+            const cx = obj.C.x * CELL_SIZE + CELL_SIZE/2;
+            const cy = obj.C.y * CELL_SIZE + CELL_SIZE/2;
+
+            if (total > 0) {
+                const fixedHeight = (obj.Phi.fixed / total) * 20;
+                const osc28Height = (obj.Phi.osc28 / total) * 20;
+                const osc37Height = (obj.Phi.osc37 / total) * 20;
+
+                const fixedBar = phaseIndicator.querySelector('.phase-fixed');
+                const osc28Bar = phaseIndicator.querySelector('.phase-osc28');
+                const osc37Bar = phaseIndicator.querySelector('.phase-osc37');
+
+                fixedBar.setAttribute('x', cx - 6);
+                fixedBar.setAttribute('y', cy - fixedHeight/2);
+                fixedBar.setAttribute('height', fixedHeight);
+
+                osc28Bar.setAttribute('x', cx - 2);
+                osc28Bar.setAttribute('y', cy - osc28Height/2);
+                osc28Bar.setAttribute('height', osc28Height);
+
+                osc37Bar.setAttribute('x', cx + 2);
+                osc37Bar.setAttribute('y', cy - osc37Height/2);
+                osc37Bar.setAttribute('height', osc37Height);
+            }
+
+            // Update stability glow
+            stabilityGlow.setAttribute('cx', obj.C.x * CELL_SIZE + CELL_SIZE/2);
+            stabilityGlow.setAttribute('cy', obj.C.y * CELL_SIZE + CELL_SIZE/2);
+            stabilityGlow.setAttribute('opacity', obj.Theta.stability * 0.5);
+        }
+
+        // Helper method for SelfObject to get dominant phase
+        SelfObject.prototype.getDominantPhase = function() {
+            const {fixed, osc28, osc37} = this.Phi;
+            const max = Math.max(fixed, osc28, osc37);
+            if (max === fixed) return SECTORS.FIXED;
+            if (max === osc28) return SECTORS.OSC28;
+            return SECTORS.OSC37;
+        };
+
+        // Object lifecycle management
+        function manageObjectLifecycle(sectorGrid, brightnessGrid) {
+            // Create new objects from unclaimed regions
+            const newObjects = initializeObjects(sectorGrid, brightnessGrid);
+
+            // Filter out objects that are too small or overlap significantly with existing objects
+            const viableNewObjects = newObjects.filter(newObj => {
+                // Check minimum size
+                if (newObj.getArea() < 4) return false;
+
+                // Check for significant overlap with existing objects
+                for (const existingObj of objects) {
+                    if (objectsOverlap(newObj, existingObj)) {
+                        return false; // Discard overlapping new objects
+                    }
+                }
+                return true;
+            });
+
+            // Add viable new objects
+            objects.push(...viableNewObjects);
+
+            // Remove unstable or dead objects
+            objects = objects.filter(obj => {
+                // Remove objects that are too small
+                if (obj.getArea() < 2) return false;
+
+                // Remove objects with too low stability
+                if (obj.Theta.stability < 0.1 && obj.age > 5) return false;
+
+                // Remove objects that have moved too far from their initial position
+                if (obj.age > 20 && obj.Theta.stability < 0.3) return false;
+
+                return true;
+            });
+
+            // Clean up SVG elements for removed objects
+            const existingIds = new Set(objects.map(obj => obj.id));
+            const svgObjects = document.querySelectorAll('#objectsGroup .self-object');
+            svgObjects.forEach(svgObj => {
+                const id = parseInt(svgObj.id.split('-')[1]);
+                if (!existingIds.has(id)) {
+                    svgObj.remove();
+                }
+            });
+        }
+
+        // Check if two objects significantly overlap
+        function objectsOverlap(obj1, obj2) {
+            const overlapX = Math.max(0, Math.min(obj1.R.maxX, obj2.R.maxX) - Math.max(obj1.R.minX, obj2.R.minX));
+            const overlapY = Math.max(0, Math.min(obj1.R.maxY, obj2.R.maxY) - Math.max(obj1.R.minY, obj2.R.minY));
+            const overlapArea = overlapX * overlapY;
+
+            const area1 = obj1.getArea();
+            const area2 = obj2.getArea();
+
+            // Consider overlapping if more than 30% of smaller object is overlapped
+            const minArea = Math.min(area1, area2);
+            return overlapArea > minArea * 0.3;
+        }
+
+        // Evolve all objects for one time step
+        function evolveAllObjects(globalBrightness, globalPhase) {
+            for (const obj of objects) {
+                obj.evolve(globalBrightness, globalPhase);
+                updateObjectSVG(obj);
+            }
+        }
+
+        function getSector(digit) {
+            for (const [key, sector] of Object.entries(SECTORS)) {
+                if (sector.digits.has(digit)) {
+                    return sector;
+                }
+            }
+            return SECTORS.FIXED; // fallback
+        }
+
+        function applyMirrorPhaseTransform(brightness) {
+            // Map brightness to 0-99
+            const val = Math.round(brightness * 99 / 255);
+
+            // Extract last digit
+            const d = val % 10;
+
+            // Apply exponent 7 mod 10
+            const d7 = Math.pow(d, 7) % 10;
+
+            // Get sector based on original digit d
+            const sector = getSector(d);
+
+            return { d, d7, sector, val };
+        }
+
+        function sampleGridFromCanvas() {
+            // Set canvas size to video dimensions
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0);
+
+            // Sample grid cells
+            const cellWidth = canvas.width / GRID_WIDTH;
+            const cellHeight = canvas.height / GRID_HEIGHT;
+
+            const cellData = [];
+
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    // Get average brightness for this cell
+                    const startX = Math.floor(x * cellWidth);
+                    const startY = Math.floor(y * cellHeight);
+                    const endX = Math.floor((x + 1) * cellWidth);
+                    const endY = Math.floor((y + 1) * cellHeight);
+
+                    const imageData = ctx.getImageData(startX, startY, endX - startX, endY - startY);
+                    const pixels = imageData.data;
+
+                    let totalBrightness = 0;
+                    let pixelCount = 0;
+
+                    for (let i = 0; i < pixels.length; i += 4) {
+                        const r = pixels[i];
+                        const g = pixels[i + 1];
+                        const b = pixels[i + 2];
+                        // Convert to grayscale using luminance formula
+                        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+                        totalBrightness += brightness;
+                        pixelCount++;
+                    }
+
+                    const avgBrightness = totalBrightness / pixelCount;
+                    cellData.push(avgBrightness);
+                }
+            }
+
+            return cellData;
+        }
+
+        function updateFrame() {
+            if (!video.videoWidth || !video.videoHeight || video.readyState < 2) {
+                // Retry on next frame if video not ready yet
+                animationId = requestAnimationFrame(updateFrame);
+                return;
+            }
+
+            // Sample grid from canvas
+            const cellBrightness = sampleGridFromCanvas();
+
+            // Create 2D grids for brightness and phase
+            const brightnessGrid = [];
+            const phaseGrid = [];
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                brightnessGrid[y] = [];
+                phaseGrid[y] = [];
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const index = y * GRID_WIDTH + x;
+                    const brightness = cellBrightness[index];
+                    brightnessGrid[y][x] = brightness;
+
+                    const transform = applyMirrorPhaseTransform(brightness);
+                    phaseGrid[y][x] = transform.sector;
+
+                    // Update SVG cell
+                    const cell = cells[index];
+
+                    // Update cell appearance
+                    cell.setAttribute('fill', transform.sector.color);
+
+                    // Use d7 for opacity modulation (0-9 mapped to 0.3-1.0)
+                    const opacity = 0.3 + (transform.d7 / 9) * 0.7;
+                    cell.setAttribute('opacity', opacity);
+                }
+            }
+
+            // Reset stats for this frame
+            stats.fixedCount = 0;
+            stats.osc28Count = 0;
+            stats.osc37Count = 0;
+
+            // Count sectors for stats
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const sector = phaseGrid[y][x];
+                    if (sector === SECTORS.FIXED) stats.fixedCount++;
+                    else if (sector === SECTORS.OSC28) stats.osc28Count++;
+                    else if (sector === SECTORS.OSC37) stats.osc37Count++;
+                }
+            }
+
+            // Evolve all existing objects
+            evolveAllObjects(brightnessGrid, phaseGrid);
+
+            // Manage object lifecycle (create new, remove old)
+            manageObjectLifecycle(phaseGrid, brightnessGrid);
+
+            stats.frameCount++;
+
+            // Update stats display
+            updateStats();
+
+            // Continue animation
+            animationId = requestAnimationFrame(updateFrame);
+        }
+
+        function updateStats() {
+            const fixedPercent = ((stats.fixedCount / stats.totalCells) * 100).toFixed(1);
+            const osc28Percent = ((stats.osc28Count / stats.totalCells) * 100).toFixed(1);
+            const osc37Percent = ((stats.osc37Count / stats.totalCells) * 100).toFixed(1);
+
+            // Calculate object stats
+            const totalStability = objects.reduce((sum, obj) => sum + obj.Theta.stability, 0);
+            const avgStability = objects.length > 0 ? (totalStability / objects.length).toFixed(2) : '0.00';
+            const totalAge = objects.reduce((sum, obj) => sum + obj.age, 0);
+            const avgAge = objects.length > 0 ? (totalAge / objects.length).toFixed(1) : '0.0';
+
+            statsDiv.innerHTML = `Status: Running (frame ${stats.frameCount})
+
+Grid: ${GRID_WIDTH}×${GRID_HEIGHT} cells (${stats.totalCells} total)
+Objects: ${objects.length} active
+
+Sector Distribution:
+Fixed: ${stats.fixedCount} cells (${fixedPercent}%)
+Osc28: ${stats.osc28Count} cells (${osc28Percent}%)
+Osc37: ${stats.osc37Count} cells (${osc37Percent}%)
+
+Object Stats:
+Avg Stability: ${avgStability}
+Avg Age: ${avgAge} frames
+
+Self-referential Sobel-bounded objects evolving...`;
+        }
+
+        async function startVideo() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480 }
+                });
+
+                video.srcObject = stream;
+                video.muted = true; // Ensure muted for autoplay
+
+                // Wait for video to be ready and playing
+                await new Promise(resolve => {
+                    video.onloadedmetadata = () => {
+                        // Set video dimensions to requested size
+                        video.width = 640;
+                        video.height = 480;
+                        video.play().then(() => {
+                            resolve();
+                        }).catch(resolve); // Resolve anyway to avoid hanging
+                    };
+                });
+
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+                // Start animation loop
+                updateFrame();
+
+            } catch (error) {
+                console.error('Error accessing webcam:', error);
+                statsDiv.innerHTML = `Status: Error - ${error.message}
+
+Please ensure:
+• You're using HTTPS or localhost
+• You've granted camera permission
+• Your camera is not in use by another app`;
+            }
+        }
+
+        function stopVideo() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+
+            // Reset cells to default state
+            cells.forEach(cell => {
+                cell.setAttribute('fill', '#333');
+                cell.setAttribute('opacity', 0.3);
+            });
+
+            statsDiv.innerHTML = `Status: Stopped
+
+Grid: ${GRID_WIDTH}×${GRID_HEIGHT} cells
+
+Stats will update live...`;
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startVideo);
+        stopBtn.addEventListener('click', stopVideo);
+
+        // Initialize SVG grid
+        initSVGGrid();
+    </script>
+</body>
+</html>
