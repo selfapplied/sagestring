@@ -71,7 +71,7 @@
 
     <div class="main-container">
         <div class="panel main-display">
-            <h3>Live SVG</h3>
+            <h3>Evolved SVG</h3>
             <div class="kernel-display" id="reflected-svg"></div>
         </div>
 
@@ -93,7 +93,7 @@
         <button onclick="evolveMultiple(5)">Evolve 5 Steps</button>
         <button onclick="vectorizeBack()">Vectorize to SVG</button>
         <button onclick="runFullCycle()">Run Full Cycle</button>
-        <button id="live-update-btn" onclick="toggleLiveUpdate()">Start Live Update</button>
+        <button id="live-update-btn" onclick="toggleLiveUpdate()">Animate</button>
         <button onclick="resetSystem()">Reset</button>
     </div>
 
@@ -243,19 +243,19 @@
             const btn = document.getElementById('live-update-btn');
             
             if (liveUpdateActive) {
-                btn.textContent = 'Stop Live Update';
+                btn.textContent = 'Stop';
                 btn.style.background = '#4a2a2a';
                 lastUpdateTime = performance.now();
                 animationFrameId = requestAnimationFrame(liveUpdateLoop);
-                updateStatus("Live update active");
+                updateStatus("Animating");
             } else {
-                btn.textContent = 'Start Live Update';
+                btn.textContent = 'Animate';
                 btn.style.background = '#2a2a2a';
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
                     animationFrameId = null;
                 }
-                updateStatus("Live update stopped");
+                updateStatus("Stopped");
             }
         }
 

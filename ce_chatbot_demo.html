@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CE Tower Chatbot: Live Course Data Query</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        .header h1 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #0f0f0f;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+            max-width: 80%;
+        }
+        .message.user {
+            background: #2a2a2a;
+            margin-left: auto;
+            border-left: 3px solid #4ecdc4;
+        }
+        .message.bot {
+            background: #1a2a1a;
+            margin-right: auto;
+            border-left: 3px solid #f9ca24;
+        }
+        .message-header {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .sources {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+            font-size: 11px;
+            color: #888;
+        }
+        .source-item {
+            margin: 3px 0;
+        }
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            background: #0f0f0f;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+        button {
+            background: #4ecdc4;
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #5eddd4;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .ce-status {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .ce-block {
+            background: #0f0f0f;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .ce-block h3 {
+            color: #4ecdc4;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .ce-value {
+            color: #4ecdc4;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .guardians {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .guardian {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .guardian-name {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        .guardian-value {
+            color: #4ecdc4;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: #0f0f0f;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: #4ecdc4;
+            transition: width 0.3s;
+        }
+        .confidence-fill.low {
+            background: #f9ca24;
+        }
+        .confidence-fill.very-low {
+            background: #ff6b6b;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+        .example-queries {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        .example-query {
+            display: inline-block;
+            background: #0f0f0f;
+            padding: 6px 12px;
+            margin: 5px 5px 5px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid #444;
+            transition: all 0.2s;
+        }
+        .example-query:hover {
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CE Tower Chatbot</h1>
+        <p>Query course data through CE architecture: Memory, Domains, Morphisms, Witness</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Chat</h2>
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message bot">
+                        <div class="message-header">CE Bot</div>
+                        <div class="message-content">
+                            Hello! I'm a CE-powered chatbot. I can answer questions about the loaded course material using CE Tower architecture.
+                            <br><br>
+                            Try asking about concepts, definitions, relationships, or examples from the course.
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ask a question about the course..." 
+                           onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button onclick="sendMessage()" id="send-button">Send</button>
+                </div>
+                <div class="example-queries">
+                    <div style="color: #888; font-size: 11px; margin-bottom: 8px;">Example queries:</div>
+                    <span class="example-query" onclick="setQuery('What is a category?')">What is a category?</span>
+                    <span class="example-query" onclick="setQuery('Explain morphisms')">Explain morphisms</span>
+                    <span class="example-query" onclick="setQuery('Give an example')">Give an example</span>
+                    <span class="example-query" onclick="setQuery('How are concepts related?')">How are concepts related?</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>CE Tower Status</h2>
+            <div class="ce-status">
+                <div class="ce-block">
+                    <h3>CE1 Memory</h3>
+                    <div class="ce-value" id="ce1-memory">0</div>
+                </div>
+                <div class="ce-block">
+                    <h3>CE2 Attention</h3>
+                    <div class="ce-value" id="ce2-attention">0</div>
+                </div>
+                <div class="ce-block">
+                    <h3>CE3 Errors</h3>
+                    <div class="ce-value" id="ce3-errors">0</div>
+                </div>
+            </div>
+
+            <h3 style="color: #4ecdc4; margin-top: 20px; margin-bottom: 10px; font-size: 14px;">Guardians</h3>
+            <div class="guardians">
+                <div class="guardian">
+                    <div class="guardian-name">ϕ (Phase)</div>
+                    <div class="guardian-value" id="guardian-phi">0.85</div>
+                </div>
+                <div class="guardian">
+                    <div class="guardian-name">∂ (Structure)</div>
+                    <div class="guardian-value" id="guardian-partial">0.92</div>
+                </div>
+                <div class="guardian">
+                    <div class="guardian-name">ℛ (Coherence)</div>
+                    <div class="guardian-value" id="guardian-scriptr">0.88</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                <div style="color: #888; font-size: 11px; margin-bottom: 8px;">Response Confidence</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill" style="width: 0%"></div>
+                </div>
+                <div id="confidence-text" style="color: #4ecdc4; font-size: 12px; margin-top: 5px; text-align: center;">0.00</div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                <div style="color: #888; font-size: 11px; margin-bottom: 8px;">Antclock (Experiential Time)</div>
+                <div style="color: #4ecdc4; font-size: 18px; font-weight: bold; text-align: center;" id="antclock">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="ce_education_loader.js"></script>
+    <script src="ce_chatbot.js"></script>
+    <script src="dbt_downloader.js"></script>
+    <script>
+        let loader = null;
+        let chatbot = null;
+        let isProcessing = false;
+
+        async function init() {
+            // Load example course
+            const dbtDownloader = new DBTDownloader();
+            const dbtCourse = await dbtDownloader.downloadDBTContent();
+            
+            loader = new CEEducationLoader();
+            await loader.loadCourse(dbtCourse);
+            
+            chatbot = new CEChatbot(loader);
+            
+            addMessage('bot', 'Course loaded! I can now answer questions about DBT skills, mindfulness, distress tolerance, emotion regulation, and interpersonal effectiveness.');
+            updateStatus();
+        }
+
+        function setQuery(query) {
+            document.getElementById('chat-input').value = query;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message || isProcessing) return;
+            if (!chatbot) {
+                addMessage('bot', 'Please wait, loading course data...');
+                await init();
+                return;
+            }
+
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            isProcessing = true;
+            document.getElementById('send-button').disabled = true;
+
+            // Show loading
+            const loadingId = addMessage('bot', 'Thinking...', true);
+
+            try {
+                // Query through CE Tower
+                const response = await chatbot.query(message);
+
+                // Remove loading, add response
+                removeMessage(loadingId);
+                addMessage('bot', response.text, false, response.sources, response.confidence);
+
+                // Update status
+                updateStatus();
+            } catch (error) {
+                removeMessage(loadingId);
+                addMessage('bot', `Error: ${error.message}`);
+            } finally {
+                isProcessing = false;
+                document.getElementById('send-button').disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessage(type, content, isTemporary = false, sources = null, confidence = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            const id = isTemporary ? `temp-${Date.now()}` : null;
+            messageDiv.className = `message ${type}`;
+            if (id) messageDiv.id = id;
+
+            let html = `
+                <div class="message-header">${type === 'user' ? 'You' : 'CE Bot'}</div>
+                <div class="message-content">${content}</div>
+            `;
+
+            if (sources && sources.length > 0) {
+                html += '<div class="sources">Sources: ';
+                html += sources.map(s => `${s.concept} (${s.domain})`).join(', ');
+                html += '</div>';
+            }
+
+            if (confidence !== null) {
+                html += `<div class="sources" style="margin-top: 5px;">Confidence: ${(confidence * 100).toFixed(0)}%</div>`;
+            }
+
+            messageDiv.innerHTML = html;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            return id;
+        }
+
+        function removeMessage(id) {
+            const message = document.getElementById(id);
+            if (message) message.remove();
+        }
+
+        function updateStatus() {
+            if (!chatbot) return;
+
+            const status = chatbot.getStatus();
+
+            // CE status
+            document.getElementById('ce1-memory').textContent = status.ce1.memorySize;
+            document.getElementById('ce2-attention').textContent = status.ce2.attentionSize;
+            document.getElementById('ce3-errors').textContent = status.ce3.errorLiftCount;
+
+            // Guardians
+            document.getElementById('guardian-phi').textContent = status.ce2.guardians.phi.toFixed(2);
+            document.getElementById('guardian-partial').textContent = status.ce2.guardians.partial.toFixed(2);
+            document.getElementById('guardian-scriptr').textContent = status.ce2.guardians.scriptr.toFixed(2);
+
+            // Confidence (from last response)
+            const lastResponse = chatbot.conversationHistory
+                .filter(m => m.type === 'bot')
+                .slice(-1)[0];
+            
+            if (lastResponse && lastResponse.confidence !== undefined) {
+                const confidence = lastResponse.confidence;
+                const fill = document.getElementById('confidence-fill');
+                fill.style.width = `${confidence * 100}%`;
+                
+                fill.className = 'confidence-fill';
+                if (confidence < 0.5) fill.className += ' low';
+                if (confidence < 0.3) fill.className += ' very-low';
+
+                document.getElementById('confidence-text').textContent = confidence.toFixed(2);
+            }
+
+            // Antclock
+            document.getElementById('antclock').textContent = status.antclock;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            init();
+        });
+    </script>
+</body>
+</html>
+

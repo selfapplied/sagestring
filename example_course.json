@@ -1,0 +1,51 @@
+{
+  "title": "Introduction to Category Theory",
+  "description": "A CE-structured course demonstrating learning as manifold climbing",
+  "domains": [
+    {
+      "id": "basics",
+      "name": "Basic Concepts",
+      "description": "Foundational ideas that build the category-theoretic worldview",
+      "concepts": [
+        {
+          "id": "category",
+          "name": "Category",
+          "content": "A category consists of objects and morphisms between them. Categories capture the structure of mathematical relationships. Every category has identity morphisms and composition is associative.",
+          "invariants": ["universal_principle", "morphism_structure"]
+        },
+        {
+          "id": "morphism",
+          "name": "Morphism",
+          "content": "A morphism is a structure-preserving map between objects. Morphisms compose associatively. Identity morphisms act as units for composition.",
+          "invariants": ["morphism_structure", "domain_connection"]
+        },
+        {
+          "id": "functor",
+          "name": "Functor",
+          "content": "A functor is a morphism between categories. It preserves composition and identity. Functors allow us to translate structure between categories.",
+          "invariants": ["morphism_structure", "witness_verification"]
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "name": "Advanced Topics",
+      "description": "Deeper structures that emerge from basic concepts",
+      "concepts": [
+        {
+          "id": "natural_transformation",
+          "name": "Natural Transformation",
+          "content": "A natural transformation is a morphism between functors. It provides a way to relate functors while respecting the structure of categories. Natural transformations are the morphisms in the category of functors.",
+          "invariants": ["morphism_structure", "domain_connection"]
+        },
+        {
+          "id": "adjunction",
+          "name": "Adjunction",
+          "content": "An adjunction is a relationship between two functors that captures a universal property. Adjunctions are fundamental to understanding how categories relate to each other. They provide a way to translate between different categorical perspectives.",
+          "invariants": ["universal_principle", "witness_verification"]
+        }
+      ]
+    }
+  ]
+}
+

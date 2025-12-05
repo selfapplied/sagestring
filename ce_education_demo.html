@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CE Education Loader: Learning as Manifold Climbing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        .header h1 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .ce-structure {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .ce-block {
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #4ecdc4;
+        }
+        .ce-block h3 {
+            color: #4ecdc4;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .ce-block.memory { border-left-color: #4ecdc4; }
+        .ce-block.domain { border-left-color: #45b7d1; }
+        .ce-block.morphism { border-left-color: #f9ca24; }
+        .ce-block.witness { border-left-color: #ff6b6b; }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 12px;
+        }
+        .metric-label {
+            color: #888;
+        }
+        .metric-value {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        .learning-path {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .path-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #0f0f0f;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 2px solid #4ecdc4;
+        }
+        .path-item.learned {
+            border-left-color: #4ecdc4;
+            opacity: 0.7;
+        }
+        .path-item.learning {
+            border-left-color: #f9ca24;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3a3a3a;
+            border-color: #4ecdc4;
+        }
+        button.primary {
+            background: #4ecdc4;
+            color: #0a0a0a;
+        }
+        button.primary:hover {
+            background: #5eddd4;
+        }
+        .guardians {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .guardian {
+            background: #0f0f0f;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .guardian-name {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        .guardian-value {
+            color: #4ecdc4;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .log {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid #333;
+            padding-left: 10px;
+        }
+        .log-entry.learning {
+            border-left-color: #4ecdc4;
+        }
+        .log-entry.clarity {
+            border-left-color: #f9ca24;
+        }
+        .log-entry.morphism {
+            border-left-color: #45b7d1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CE Education Loader</h1>
+        <p>Learning as Manifold Climbing: [] Memory, {} Domains, () Morphisms, <> Witness</p>
+    </div>
+
+    <div class="container">
+        <div class="main-panel">
+            <div class="panel">
+                <h2>CE Structure</h2>
+                <div class="ce-structure">
+                    <div class="ce-block memory">
+                        <h3>[] Memory (History)</h3>
+                        <div class="metric">
+                            <span class="metric-label">Learning Steps:</span>
+                            <span class="metric-value" id="memory-steps">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Transitions:</span>
+                            <span class="metric-value" id="memory-transitions">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Clarity Moments:</span>
+                            <span class="metric-value" id="memory-clarity">0</span>
+                        </div>
+                    </div>
+                    <div class="ce-block domain">
+                        <h3>{} Domains (Manifolds)</h3>
+                        <div class="metric">
+                            <span class="metric-label">Domains:</span>
+                            <span class="metric-value" id="domain-count">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Concepts:</span>
+                            <span class="metric-value" id="domain-concepts">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Curvature:</span>
+                            <span class="metric-value" id="domain-curvature">0.00</span>
+                        </div>
+                    </div>
+                    <div class="ce-block morphism">
+                        <h3>() Morphisms (Thinking)</h3>
+                        <div class="metric">
+                            <span class="metric-label">Morphisms:</span>
+                            <span class="metric-value" id="morphism-count">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Active:</span>
+                            <span class="metric-value" id="morphism-active">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Strength:</span>
+                            <span class="metric-value" id="morphism-strength">0.00</span>
+                        </div>
+                    </div>
+                    <div class="ce-block witness">
+                        <h3><> Witness (Self-Awareness)</h3>
+                        <div class="metric">
+                            <span class="metric-label">Coherence:</span>
+                            <span class="metric-value" id="witness-coherence">0.00</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Stability:</span>
+                            <span class="metric-value" id="witness-stability">0.00</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Insight Pressure:</span>
+                            <span class="metric-value" id="witness-pressure">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>CE2 Guardians (Attention Modulation)</h2>
+                <div class="guardians">
+                    <div class="guardian">
+                        <div class="guardian-name">ϕ (Phase)</div>
+                        <div class="guardian-value" id="guardian-phi">0.85</div>
+                    </div>
+                    <div class="guardian">
+                        <div class="guardian-name">∂ (Structure)</div>
+                        <div class="guardian-value" id="guardian-partial">0.92</div>
+                    </div>
+                    <div class="guardian">
+                        <div class="guardian-name">ℛ (Coherence)</div>
+                        <div class="guardian-value" id="guardian-scriptr">0.88</div>
+                    </div>
+                </div>
+                <div class="metric" style="margin-top: 15px;">
+                    <span class="metric-label">Antclock (Experiential Time):</span>
+                    <span class="metric-value" id="antclock">0</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Learning Path</h2>
+                <div class="learning-path" id="learning-path">
+                    <div style="color: #888; text-align: center; padding: 20px;">
+                        Load a course to see the learning path
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel">
+                <h2>Controls</h2>
+                <button class="primary" onclick="loadExampleCourse()">Load Example Course</button>
+                <button onclick="startLearning()">Start Learning</button>
+                <button onclick="learnNext()">Learn Next Concept</button>
+                <button onclick="reset()">Reset</button>
+            </div>
+
+            <div class="panel">
+                <h2>Activity Log</h2>
+                <div class="log" id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="ce_education_loader.js"></script>
+    <script>
+        let loader = null;
+        let currentLearningIndex = 0;
+        let isLearning = false;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function loadExampleCourse() {
+            log('Loading example course...', 'info');
+            
+            const exampleCourse = {
+                title: 'Introduction to Category Theory',
+                domains: [
+                    {
+                        id: 'basics',
+                        name: 'Basic Concepts',
+                        concepts: [
+                            {
+                                id: 'category',
+                                name: 'Category',
+                                content: 'A category consists of objects and morphisms between them. Categories capture the structure of mathematical relationships.',
+                                invariants: ['universal_principle', 'morphism_structure']
+                            },
+                            {
+                                id: 'morphism',
+                                name: 'Morphism',
+                                content: 'A morphism is a structure-preserving map between objects. Morphisms compose associatively.',
+                                invariants: ['morphism_structure', 'domain_connection']
+                            },
+                            {
+                                id: 'functor',
+                                name: 'Functor',
+                                content: 'A functor is a morphism between categories. It preserves composition and identity.',
+                                invariants: ['morphism_structure', 'witness_verification']
+                            }
+                        ]
+                    },
+                    {
+                        id: 'advanced',
+                        name: 'Advanced Topics',
+                        concepts: [
+                            {
+                                id: 'natural_transformation',
+                                name: 'Natural Transformation',
+                                content: 'A natural transformation is a morphism between functors. It provides a way to relate functors.',
+                                invariants: ['morphism_structure', 'domain_connection']
+                            },
+                            {
+                                id: 'adjunction',
+                                name: 'Adjunction',
+                                content: 'An adjunction is a relationship between two functors that captures a universal property.',
+                                invariants: ['universal_principle', 'witness_verification']
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            loader = new CEEducationLoader();
+            await loader.loadCourse(exampleCourse);
+
+            log(`Course "${exampleCourse.title}" loaded`, 'info');
+            log(`Found ${loader.course.domains.size} domains, ${loader.course.concepts.size} concepts`, 'info');
+            log(`Generated ${loader.course.morphisms.size} morphisms`, 'morphism');
+
+            updateDisplay();
+            updateLearningPath();
+        }
+
+        function updateDisplay() {
+            if (!loader) return;
+
+            const status = loader.getStatus();
+
+            // Memory
+            document.getElementById('memory-steps').textContent = status.learningPath;
+            document.getElementById('memory-transitions').textContent = 
+                Array.from(loader.course.concepts.values())
+                    .reduce((sum, c) => sum + (c.memory.transitions?.length || 0), 0);
+            document.getElementById('memory-clarity').textContent = status.clarityMoments;
+
+            // Domains
+            document.getElementById('domain-count').textContent = status.domains;
+            document.getElementById('domain-concepts').textContent = status.concepts;
+            const avgCurvature = Array.from(loader.course.domains.values())
+                .reduce((sum, d) => sum + d.curvature, 0) / status.domains;
+            document.getElementById('domain-curvature').textContent = avgCurvature.toFixed(2);
+
+            // Morphisms
+            document.getElementById('morphism-count').textContent = status.morphisms;
+            document.getElementById('morphism-active').textContent = 
+                Array.from(loader.course.morphisms.values())
+                    .filter(m => m.strength > 0.5).length;
+            const avgStrength = Array.from(loader.course.morphisms.values())
+                .reduce((sum, m) => sum + m.strength, 0) / status.morphisms;
+            document.getElementById('morphism-strength').textContent = avgStrength.toFixed(2);
+
+            // Witness
+            document.getElementById('witness-coherence').textContent = status.witness.coherence.toFixed(2);
+            document.getElementById('witness-stability').textContent = status.witness.stability.toFixed(2);
+            document.getElementById('witness-pressure').textContent = status.witness.insightPressure.toFixed(2);
+
+            // Guardians
+            document.getElementById('guardian-phi').textContent = status.guardians.phi.toFixed(2);
+            document.getElementById('guardian-partial').textContent = status.guardians.partial.toFixed(2);
+            document.getElementById('guardian-scriptr').textContent = status.guardians.scriptr.toFixed(2);
+
+            // Antclock
+            document.getElementById('antclock').textContent = status.antclock;
+        }
+
+        function updateLearningPath() {
+            if (!loader) return;
+
+            const pathDiv = document.getElementById('learning-path');
+            pathDiv.innerHTML = '';
+
+            const path = loader.learningState.understandingPath;
+            
+            for (let i = 0; i < path.length; i++) {
+                const step = path[i];
+                const concept = loader.course.concepts.get(step.conceptId);
+                if (!concept) continue;
+
+                const item = document.createElement('div');
+                item.className = 'path-item';
+                
+                const understanding = concept.memory.currentState?.understanding || 0;
+                if (understanding > 0.7) {
+                    item.className += ' learned';
+                } else if (i === currentLearningIndex && isLearning) {
+                    item.className += ' learning';
+                }
+
+                item.innerHTML = `
+                    <strong>${concept.name}</strong> (${step.domainId})<br>
+                    <span style="color: #888; font-size: 11px;">
+                        Understanding: ${(understanding * 100).toFixed(0)}% | 
+                        Confusion: ${((concept.witness.confusion || 0) * 100).toFixed(0)}%
+                    </span>
+                `;
+
+                pathDiv.appendChild(item);
+            }
+        }
+
+        async function startLearning() {
+            if (!loader) {
+                log('Load a course first!', 'info');
+                return;
+            }
+
+            isLearning = true;
+            log('Starting learning process...', 'learning');
+            await learnNext();
+        }
+
+        async function learnNext() {
+            if (!loader || !isLearning) return;
+
+            const path = loader.learningState.understandingPath;
+            if (currentLearningIndex >= path.length) {
+                isLearning = false;
+                log('Learning complete!', 'clarity');
+                return;
+            }
+
+            const step = path[currentLearningIndex];
+            const concept = loader.course.concepts.get(step.conceptId);
+
+            if (!concept) {
+                currentLearningIndex++;
+                await learnNext();
+                return;
+            }
+
+            log(`Learning: ${concept.name}...`, 'learning');
+
+            try {
+                const result = await loader.learnConcept(step.conceptId, { steps: 5 });
+                
+                const finalUnderstanding = result.finalState.understanding;
+                log(`Learned ${concept.name}: ${(finalUnderstanding * 100).toFixed(0)}% understanding`, 
+                    finalUnderstanding > 0.7 ? 'clarity' : 'learning');
+
+                if (result.transitions.length > 0) {
+                    const lastTransition = result.transitions[result.transitions.length - 1];
+                    const morphism = lastTransition.morphism;
+                    if (morphism) {
+                        log(`  → Used morphism: ${morphism.operation} (strength: ${morphism.strength.toFixed(2)})`, 'morphism');
+                    }
+                }
+
+                currentLearningIndex++;
+                updateDisplay();
+                updateLearningPath();
+
+                // Auto-continue
+                if (isLearning) {
+                    setTimeout(() => learnNext(), 500);
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'info');
+                isLearning = false;
+            }
+        }
+
+        function reset() {
+            loader = null;
+            currentLearningIndex = 0;
+            isLearning = false;
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('learning-path').innerHTML = 
+                '<div style="color: #888; text-align: center; padding: 20px;">Load a course to see the learning path</div>';
+            updateDisplay();
+            log('System reset', 'info');
+        }
+
+        // Auto-update display
+        setInterval(() => {
+            if (loader) {
+                updateDisplay();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
+

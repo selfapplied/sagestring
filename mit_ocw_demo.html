@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MIT OCW → CE Education Loader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        .header h1 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        input[type="text"] {
+            background: #0f0f0f;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3a3a3a;
+            border-color: #4ecdc4;
+        }
+        button.primary {
+            background: #4ecdc4;
+            color: #0a0a0a;
+        }
+        button.primary:hover {
+            background: #5eddd4;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid #333;
+            padding-left: 10px;
+        }
+        .log-entry.info { border-left-color: #4ecdc4; }
+        .log-entry.success { border-left-color: #4ecdc4; }
+        .log-entry.error { border-left-color: #ff6b6b; }
+        .log-entry.warning { border-left-color: #f9ca24; }
+        .course-preview {
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .course-preview h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .domain-list {
+            margin-top: 10px;
+        }
+        .domain-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border-left: 2px solid #45b7d1;
+        }
+        .domain-item strong {
+            color: #45b7d1;
+        }
+        .concept-count {
+            color: #888;
+            font-size: 11px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .status.downloading {
+            background: #5a4a2a;
+            color: #f9ca24;
+        }
+        .status.loaded {
+            background: #2a5a2a;
+            color: #4ecdc4;
+        }
+        .status.error {
+            background: #5a2a2a;
+            color: #ff6b6b;
+        }
+        .note {
+            background: #2a2a1a;
+            border: 1px solid #5a5a2a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #f9ca24;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MIT OCW → CE Education Loader</h1>
+        <p>Download MIT OpenCourseWare courses and structure as learnable manifolds</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Download Course</h2>
+            <input type="text" id="course-input" placeholder="Enter course number (e.g., 18-01sc, 6-006)" 
+                   value="18-01sc">
+            <div>
+                <button class="primary" onclick="downloadCourse()">Download Course</button>
+                <button onclick="loadExample()">Load Example</button>
+            </div>
+
+            <div class="note">
+                <strong>Note:</strong> MIT OCW may have CORS restrictions. For browser use, you may need:
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>A CORS proxy server</li>
+                    <li>Or run this in Node.js environment</li>
+                    <li>Or use the example course data</li>
+                </ul>
+            </div>
+
+            <div id="course-preview"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Activity Log</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script src="mit_ocw_downloader.js"></script>
+    <script src="ce_education_loader.js"></script>
+    <script>
+        let downloader = null;
+        let loader = null;
+        let currentCourse = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function init() {
+            downloader = new MITOCWDownloader();
+            log('MIT OCW Downloader initialized', 'info');
+        }
+
+        async function downloadCourse() {
+            const courseInput = document.getElementById('course-input');
+            const courseNumber = courseInput.value.trim();
+
+            if (!courseNumber) {
+                log('Please enter a course number', 'error');
+                return;
+            }
+
+            log(`Starting download for course: ${courseNumber}`, 'info');
+            updateStatus('downloading');
+
+            try {
+                // Note: This will likely fail in browser due to CORS
+                // In production, use a server-side proxy or Node.js
+                currentCourse = await downloader.downloadCourse(courseNumber);
+                
+                log(`Course downloaded: ${currentCourse.title}`, 'success');
+                log(`Found ${currentCourse.domains.length} domains`, 'info');
+                
+                const totalConcepts = currentCourse.domains.reduce((sum, d) => sum + d.concepts.length, 0);
+                log(`Total concepts: ${totalConcepts}`, 'info');
+
+                displayCoursePreview(currentCourse);
+                updateStatus('loaded');
+
+                // Auto-load into CE loader
+                await loadIntoCE(currentCourse);
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                log('Try using "Load Example" or check CORS settings', 'warning');
+                updateStatus('error');
+            }
+        }
+
+        async function loadExample() {
+            log('Loading example course data...', 'info');
+            
+            // Use the example course JSON
+            try {
+                const response = await fetch('example_course.json');
+                if (response.ok) {
+                    currentCourse = await response.json();
+                    log('Example course loaded', 'success');
+                    displayCoursePreview(currentCourse);
+                    await loadIntoCE(currentCourse);
+                } else {
+                    // Fallback: create inline example
+                    currentCourse = {
+                        title: 'Introduction to Category Theory',
+                        domains: [
+                            {
+                                id: 'basics',
+                                name: 'Basic Concepts',
+                                concepts: [
+                                    {
+                                        id: 'category',
+                                        name: 'Category',
+                                        content: 'A category consists of objects and morphisms between them.',
+                                        invariants: ['universal_principle', 'morphism_structure']
+                                    },
+                                    {
+                                        id: 'morphism',
+                                        name: 'Morphism',
+                                        content: 'A morphism is a structure-preserving map between objects.',
+                                        invariants: ['morphism_structure']
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    log('Using inline example course', 'info');
+                    displayCoursePreview(currentCourse);
+                    await loadIntoCE(currentCourse);
+                }
+            } catch (error) {
+                log(`Error loading example: ${error.message}`, 'error');
+            }
+        }
+
+        function displayCoursePreview(course) {
+            const previewDiv = document.getElementById('course-preview');
+            
+            previewDiv.innerHTML = `
+                <h3>${course.title}</h3>
+                <div class="domain-list">
+                    ${course.domains.map(domain => `
+                        <div class="domain-item">
+                            <strong>${domain.name}</strong>
+                            <span class="concept-count">(${domain.concepts.length} concepts)</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function loadIntoCE(courseData) {
+            if (!loader) {
+                loader = new CEEducationLoader();
+                log('CE Education Loader initialized', 'info');
+            }
+
+            try {
+                await loader.loadCourse(courseData);
+                
+                const status = loader.getStatus();
+                log(`CE structure created:`, 'success');
+                log(`  - ${status.domains} domains`, 'info');
+                log(`  - ${status.concepts} concepts`, 'info');
+                log(`  - ${status.morphisms} morphisms`, 'info');
+                log(`  - Witness coherence: ${status.witness.coherence.toFixed(2)}`, 'info');
+                log(`  - Antclock: ${status.antclock}`, 'info');
+                
+                log('Course ready for learning!', 'success');
+            } catch (error) {
+                log(`Error loading into CE: ${error.message}`, 'error');
+            }
+        }
+
+        function updateStatus(status) {
+            const previewDiv = document.getElementById('course-preview');
+            if (!previewDiv) return;
+
+            const existing = previewDiv.querySelector('.status');
+            if (existing) existing.remove();
+
+            const statusEl = document.createElement('span');
+            statusEl.className = `status ${status}`;
+            statusEl.textContent = status.toUpperCase();
+            
+            const title = previewDiv.querySelector('h3');
+            if (title) {
+                title.appendChild(statusEl);
+            } else {
+                previewDiv.appendChild(statusEl);
+            }
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
+

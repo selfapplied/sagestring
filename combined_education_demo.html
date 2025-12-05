@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Combined Education: MIT OCW + DBT → CE Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        .header h1 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .source-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #0f0f0f;
+            border-radius: 6px;
+            border-left: 3px solid #4ecdc4;
+        }
+        .source-section.dbt {
+            border-left-color: #f9ca24;
+        }
+        .source-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .source-section.dbt h3 {
+            color: #f9ca24;
+        }
+        input[type="text"] {
+            background: #0f0f0f;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3a3a3a;
+            border-color: #4ecdc4;
+        }
+        button.primary {
+            background: #4ecdc4;
+            color: #0a0a0a;
+        }
+        button.primary:hover {
+            background: #5eddd4;
+        }
+        button.dbt {
+            background: #f9ca24;
+            color: #0a0a0a;
+        }
+        button.dbt:hover {
+            background: #fad24;
+        }
+        button.combine {
+            background: #ff6b6b;
+            color: #fff;
+        }
+        button.combine:hover {
+            background: #ff7b7b;
+        }
+        .log {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 2px solid #333;
+            padding-left: 10px;
+        }
+        .log-entry.info { border-left-color: #4ecdc4; }
+        .log-entry.success { border-left-color: #4ecdc4; }
+        .log-entry.error { border-left-color: #ff6b6b; }
+        .log-entry.warning { border-left-color: #f9ca24; }
+        .log-entry.dbt { border-left-color: #f9ca24; }
+        .course-preview {
+            background: #0f0f0f;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .domain-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .domain-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border-left: 2px solid #45b7d1;
+        }
+        .domain-item.dbt {
+            border-left-color: #f9ca24;
+        }
+        .domain-item strong {
+            color: #45b7d1;
+        }
+        .domain-item.dbt strong {
+            color: #f9ca24;
+        }
+        .concept-count {
+            color: #888;
+            font-size: 11px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            color: #4ecdc4;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Combined Education: Academic + Experiential</h1>
+        <p>MIT OCW (academic) + DBT Skills (experiential) → Balanced CE Learning Manifold</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Data Sources</h2>
+            
+            <div class="source-section">
+                <h3>📚 MIT OCW (Academic)</h3>
+                <input type="text" id="mit-course-input" placeholder="Course number (e.g., 18-01sc)" 
+                       value="18-01sc">
+                <div>
+                    <button class="primary" onclick="downloadMIT()">Download MIT Course</button>
+                    <button onclick="loadMITExample()">Load Example</button>
+                </div>
+                <div id="mit-preview"></div>
+            </div>
+
+            <div class="source-section dbt">
+                <h3>🧘 DBT Skills (Experiential)</h3>
+                <div>
+                    <button class="dbt" onclick="downloadDBT()">Load DBT Skills</button>
+                    <button class="dbt" onclick="loadDBTExample()">Load Example</button>
+                </div>
+                <div id="dbt-preview"></div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #333;">
+                <button class="combine" onclick="combineAndLoad()">Combine & Load into CE</button>
+            </div>
+
+            <div id="combined-preview" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Activity Log</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script src="mit_ocw_downloader.js"></script>
+    <script src="dbt_downloader.js"></script>
+    <script src="ce_education_loader.js"></script>
+    <script>
+        let mitDownloader = null;
+        let dbtDownloader = null;
+        let loader = null;
+        let mitCourse = null;
+        let dbtCourse = null;
+        let combinedCourse = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function init() {
+            mitDownloader = new MITOCWDownloader();
+            dbtDownloader = new DBTDownloader();
+            log('Downloaders initialized', 'info');
+        }
+
+        async function downloadMIT() {
+            const courseInput = document.getElementById('mit-course-input');
+            const courseNumber = courseInput.value.trim();
+
+            if (!courseNumber) {
+                log('Please enter a course number', 'error');
+                return;
+            }
+
+            log(`Downloading MIT course: ${courseNumber}`, 'info');
+
+            try {
+                mitCourse = await mitDownloader.downloadCourse(courseNumber);
+                log(`MIT course loaded: ${mitCourse.title}`, 'success');
+                log(`  - ${mitCourse.domains.length} domains, ${mitCourse.domains.reduce((s, d) => s + d.concepts.length, 0)} concepts`, 'info');
+                displayMITPreview(mitCourse);
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                log('Try "Load Example" instead', 'warning');
+            }
+        }
+
+        async function loadMITExample() {
+            log('Loading MIT example course...', 'info');
+            
+            try {
+                const response = await fetch('example_course.json');
+                if (response.ok) {
+                    mitCourse = await response.json();
+                } else {
+                    mitCourse = {
+                        title: 'Introduction to Category Theory',
+                        domains: [{
+                            id: 'basics',
+                            name: 'Basic Concepts',
+                            concepts: [
+                                { id: 'category', name: 'Category', content: 'A category consists of objects and morphisms.', invariants: ['universal_principle'] },
+                                { id: 'morphism', name: 'Morphism', content: 'A morphism is a structure-preserving map.', invariants: ['morphism_structure'] }
+                            ]
+                        }]
+                    };
+                }
+                log('MIT example loaded', 'success');
+                displayMITPreview(mitCourse);
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function downloadDBT() {
+            log('Loading DBT skills...', 'info');
+
+            try {
+                dbtCourse = await dbtDownloader.downloadDBTContent({
+                    title: 'DBT Skills Training'
+                });
+                log(`DBT course loaded: ${dbtCourse.title}`, 'dbt');
+                log(`  - ${dbtCourse.domains.length} modules (Mindfulness, Distress Tolerance, Emotion Regulation, Interpersonal Effectiveness)`, 'dbt');
+                log(`  - ${dbtCourse.domains.reduce((s, d) => s + d.concepts.length, 0)} skills total`, 'dbt');
+                displayDBTPreview(dbtCourse);
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadDBTExample() {
+            log('Loading DBT example...', 'info');
+            await downloadDBT();
+        }
+
+        function displayMITPreview(course) {
+            const preview = document.getElementById('mit-preview');
+            if (!course) return;
+
+            preview.innerHTML = `
+                <div class="course-preview">
+                    <strong>${course.title}</strong>
+                    <div class="domain-list">
+                        ${course.domains.slice(0, 3).map(d => `
+                            <div class="domain-item">
+                                <strong>${d.name}</strong>
+                                <span class="concept-count">(${d.concepts.length} concepts)</span>
+                            </div>
+                        `).join('')}
+                        ${course.domains.length > 3 ? `<div style="color: #888; font-size: 11px; margin-top: 5px;">+ ${course.domains.length - 3} more domains</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayDBTPreview(course) {
+            const preview = document.getElementById('dbt-preview');
+            if (!course) return;
+
+            preview.innerHTML = `
+                <div class="course-preview">
+                    <strong>${course.title}</strong>
+                    <div class="domain-list">
+                        ${course.domains.map(d => `
+                            <div class="domain-item dbt">
+                                <strong>${d.name}</strong>
+                                <span class="concept-count">(${d.concepts.length} skills)</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function combineAndLoad() {
+            if (!mitCourse && !dbtCourse) {
+                log('Load at least one course first!', 'error');
+                return;
+            }
+
+            log('Combining courses...', 'info');
+
+            // If both exist, combine them
+            if (mitCourse && dbtCourse) {
+                try {
+                    const combined = await dbtDownloader.combineWithCourse(dbtCourse, mitCourse);
+                    combinedCourse = combined.course;
+                    log(`Combined course created: ${combinedCourse.title}`, 'success');
+                    log(`  - ${combinedCourse.domains.length} total domains`, 'info');
+                    log(`  - ${combined.morphisms.length} cross-domain morphisms created`, 'info');
+                    displayCombinedPreview(combinedCourse);
+                } catch (error) {
+                    log(`Error combining: ${error.message}`, 'error');
+                    return;
+                }
+            } else {
+                // Use whichever is available
+                combinedCourse = mitCourse || dbtCourse;
+                log(`Using single course: ${combinedCourse.title}`, 'info');
+            }
+
+            // Load into CE
+            if (!loader) {
+                loader = new CEEducationLoader();
+                log('CE Education Loader initialized', 'info');
+            }
+
+            try {
+                await loader.loadCourse(combinedCourse);
+                
+                const status = loader.getStatus();
+                log(`Course loaded into CE structure:`, 'success');
+                log(`  - ${status.domains} domains`, 'info');
+                log(`  - ${status.concepts} concepts`, 'info');
+                log(`  - ${status.morphisms} morphisms`, 'info');
+                log(`  - Witness coherence: ${status.witness.coherence.toFixed(2)}`, 'info');
+                log(`  - Antclock: ${status.antclock}`, 'info');
+                
+                displayCEStats(status);
+                log('Ready for learning!', 'success');
+            } catch (error) {
+                log(`Error loading into CE: ${error.message}`, 'error');
+            }
+        }
+
+        function displayCombinedPreview(course) {
+            const preview = document.getElementById('combined-preview');
+            if (!course) return;
+
+            const mitCount = course.domains.filter(d => !d.name.includes('Mindfulness') && !d.name.includes('Distress') && !d.name.includes('Emotion') && !d.name.includes('Interpersonal')).length;
+            const dbtCount = course.domains.length - mitCount;
+
+            preview.innerHTML = `
+                <div class="course-preview">
+                    <h3 style="color: #4ecdc4; margin-bottom: 10px;">${course.title}</h3>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">${course.domains.length}</div>
+                            <div class="stat-label">Total Domains</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${course.domains.reduce((s, d) => s + d.concepts.length, 0)}</div>
+                            <div class="stat-label">Total Concepts</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${mitCount}</div>
+                            <div class="stat-label">Academic</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${dbtCount}</div>
+                            <div class="stat-label">DBT Skills</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayCEStats(status) {
+            // Could add a stats display panel here
+            log(`CE Structure: ${status.domains} domains, ${status.concepts} concepts, ${status.morphisms} morphisms`, 'info');
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
+

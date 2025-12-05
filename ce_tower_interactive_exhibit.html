@@ -700,6 +700,9 @@
         let videoKernel = null; // Kernel created from video frames
         let frameCounter = 0;
         let showSVG = false; // Toggle for SVG display
+        let lastFrameTime = 0;
+        let frameTimeHistory = [];
+        let lastVideoTime = -1; // Track video currentTime to detect new frames
 
         // Guardian values
         let guardianPhi = 0.85;
@@ -888,6 +891,11 @@
             }
             
             updateDisplay();
+            
+            // Update SVG for first kernel (or all if needed)
+            if (currentKernels.length > 0) {
+                updateRealTimeSVG(currentKernels[0]);
+            }
         }
 
         /**
@@ -2521,22 +2529,35 @@
             document.getElementById('kappa-value').textContent = kappa.toFixed(2);
         });
 
-        // Auto-evolution loop
-        let evolutionInterval = null;
+        // Auto-evolution loop using requestAnimationFrame
+        let evolutionAnimationId = null;
+        let lastEvolutionTime = 0;
+        const evolutionInterval = 50; // ms between evolution steps
+        
         function startAutoEvolution() {
-            if (evolutionInterval) return;
-            evolutionInterval = setInterval(() => {
-                if (isInitialized && currentKernels.length > 0) {
-                    evolveStep();
-                }
-            }, 2000);
+            if (evolutionAnimationId) return;
+            lastEvolutionTime = performance.now();
+            evolutionAnimationId = requestAnimationFrame(evolutionLoop);
         }
 
         function stopAutoEvolution() {
-            if (evolutionInterval) {
-                clearInterval(evolutionInterval);
-                evolutionInterval = null;
+            if (evolutionAnimationId) {
+                cancelAnimationFrame(evolutionAnimationId);
+                evolutionAnimationId = null;
             }
+        }
+        
+        function evolutionLoop(currentTime) {
+            if (!evolutionAnimationId) return;
+            
+            if (currentTime - lastEvolutionTime >= evolutionInterval) {
+                if (isInitialized && currentKernels.length > 0) {
+                    evolveStep();
+                }
+                lastEvolutionTime = currentTime;
+            }
+            
+            evolutionAnimationId = requestAnimationFrame(evolutionLoop);
         }
 
         /**
@@ -2572,6 +2593,12 @@
                 // Show UI
                 videoContainer.style.display = 'block';
                 videoStats.style.display = 'grid';
+                
+                // Reset frame timing
+                lastFrameTime = 0;
+                frameTimeHistory = [];
+                frameCounter = 0;
+                lastVideoTime = -1;
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 startBtn.classList.remove('active');
@@ -2628,6 +2655,9 @@
          * Stop video capture
          */
         function stopVideoCapture() {
+            // Reset frame timing
+            lastFrameTime = 0;
+            frameTimeHistory = [];
             isVideoProcessing = false;
 
             if (videoStream) {
@@ -2690,10 +2720,19 @@
         function processVideoFrame() {
             if (!isVideoProcessing || !videoElement || !videoOverlay) return;
 
+            // Only process if video has a new frame (currentTime changed)
+            const currentVideoTime = videoElement.currentTime;
+            if (currentVideoTime === lastVideoTime) {
+                // No new frame yet, schedule check again
+                requestAnimationFrame(processVideoFrame);
+                return;
+            }
+            lastVideoTime = currentVideoTime;
+
             const startTime = performance.now();
 
             try {
-                // Capture frame
+                // Capture fresh frame from camera
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = 640;
                 tempCanvas.height = 480;
@@ -2704,22 +2743,29 @@
                 const imageData = tempCtx.getImageData(0, 0, 640, 480);
                 const lattice = frameToLattice(imageData);
 
-                // Update video kernel lattice
+                // Update video kernel lattice with fresh frame
                 if (videoKernel) {
                     videoKernel.lattice = lattice;
 
                     // Process through CE Tower with antclock timing
                     const size = Math.sqrt(lattice.length);
                     
-                    // Compute fractal Sobel edges with antclock drift correction
-                    videoKernel.edges = computeFractalSobelGradients(
+                    // Compute fractal Sobel edges on FRESH frame
+                    const freshEdges = computeFractalSobelGradients(
                         lattice,
                         size,
                         videoKernel.kernelFamily,
                         videoKernel.kernelIteration || 0,
-                        antclock, // Antclock timing for drift correction
-                        videoKernel.edges // Previous result for convergence
+                        antclock,
+                        null // Don't use previous for convergence - compute fresh
                     );
+                    
+                    // Merge edge results across frames
+                    if (videoKernel.edges) {
+                        videoKernel.edges = mergeEdgeResults(videoKernel.edges, freshEdges);
+                    } else {
+                        videoKernel.edges = freshEdges;
+                    }
 
                     // Update kernel family
                     if (videoKernel.edges.updatedKernels) {
@@ -2780,10 +2826,7 @@
 
             // Schedule next frame - ensure loop continues
             if (isVideoProcessing) {
-                // Use requestAnimationFrame for smooth updates
                 requestAnimationFrame(processVideoFrame);
-            } else {
-                console.log('Video processing stopped');
             }
         }
 
@@ -2904,10 +2947,71 @@
          * Update video statistics display
          */
         function updateVideoStats(frame, processingTime) {
-            const fps = processingTime > 0 ? (1000 / processingTime).toFixed(1) : '0';
-            document.getElementById('video-fps').textContent = fps;
+            const now = performance.now();
+            
+            // Calculate actual FPS from frame timing
+            if (lastFrameTime > 0) {
+                const frameDelta = now - lastFrameTime;
+                frameTimeHistory.push(frameDelta);
+                if (frameTimeHistory.length > 30) {
+                    frameTimeHistory.shift();
+                }
+                
+                const avgFrameTime = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
+                const fps = avgFrameTime > 0 ? (1000 / avgFrameTime).toFixed(1) : '0';
+                document.getElementById('video-fps').textContent = fps;
+            } else {
+                document.getElementById('video-fps').textContent = '0';
+            }
+            
+            lastFrameTime = now;
             document.getElementById('video-frame').textContent = frame;
             document.getElementById('video-processing').textContent = `${processingTime.toFixed(1)}ms`;
+        }
+
+        /**
+         * Merge edge detection results across frames
+         */
+        function mergeEdgeResults(previousEdges, freshEdges) {
+            if (!previousEdges || !freshEdges) return freshEdges;
+            
+            const mergeAlpha = 0.6; // Weight for fresh edges (60% fresh, 40% previous)
+            const size = freshEdges.magnitude.length;
+            
+            // Merge magnitude and direction arrays
+            const mergedMagnitude = new Float32Array(size);
+            const mergedDirection = new Float32Array(size);
+            
+            for (let i = 0; i < size; i++) {
+                // Merge magnitude: weighted average
+                mergedMagnitude[i] = mergeAlpha * freshEdges.magnitude[i] + (1 - mergeAlpha) * previousEdges.magnitude[i];
+                
+                // Merge direction: weighted circular mean
+                const prevAngle = previousEdges.direction[i];
+                const freshAngle = freshEdges.direction[i];
+                const diff = freshAngle - prevAngle;
+                const wrappedDiff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                mergedDirection[i] = prevAngle + mergeAlpha * wrappedDiff;
+            }
+            
+            // Preserve all properties from fresh edges, but use merged magnitude/direction
+            return {
+                magnitude: mergedMagnitude,
+                direction: mergedDirection,
+                maxMagnitude: Math.max(...Array.from(mergedMagnitude)),
+                scaleEnergies: freshEdges.scaleEnergies || [],
+                totalEnergy: freshEdges.totalEnergy,
+                baseEnergy: freshEdges.baseEnergy,
+                alpha: freshEdges.alpha,
+                weights: freshEdges.weights || [],
+                sharpeningCoeffs: freshEdges.sharpeningCoeffs || [],
+                scaleResponses: freshEdges.scaleResponses || [],
+                updatedKernels: freshEdges.updatedKernels,
+                converged: freshEdges.converged,
+                maxChange: freshEdges.maxChange || 0,
+                avgAntclockRate: freshEdges.avgAntclockRate || 0,
+                driftCorrectionFactor: freshEdges.driftCorrectionFactor || 1.0
+            };
         }
 
         /**
@@ -2935,7 +3039,6 @@
             
             // Validate data
             if (!size || size !== size || size <= 0) {
-                console.log('SVG update skipped: invalid size', size);
                 return;
             }
             const lattice = kernel.lattice;
@@ -2946,7 +3049,7 @@
 
             // Draw lattice as filled regions (full contour tracing)
             const threshold = 0.3;
-            const paths = extractPathsFromLattice(lattice, size, threshold);
+            const paths = extractLatticePaths(lattice, size, threshold);
             
             for (const path of paths) {
                 svg += `<path d="${path.d}" fill="rgba(78, 205, 196, 0.4)" stroke="#4ecdc4" stroke-width="0.5"/>`;
@@ -2988,82 +3091,50 @@
             svgDisplay.innerHTML = svg;
         }
 
+
         /**
-         * Extract SVG paths from lattice using contour tracing
+         * Extract paths from lattice (minimal implementation)
          */
-        function extractPathsFromLattice(lattice, size, threshold) {
+        function extractLatticePaths(lattice, size, threshold) {
+            if (kernelSystem && kernelSystem.extractPathsFromLattice) {
+                return kernelSystem.extractPathsFromLattice(lattice, size, threshold);
+            }
+            // Fallback: simple threshold-based regions
             const paths = [];
             const visited = new Set();
-
             for (let y = 0; y < size - 1; y++) {
                 for (let x = 0; x < size - 1; x++) {
                     const idx = y * size + x;
-                    if (visited.has(idx)) continue;
-
-                    if (lattice[idx] >= threshold) {
-                        const contour = traceContour(lattice, size, x, y, threshold, visited);
-                        if (contour.length > 3) {
-                            paths.push({d: contourToSVGPath(contour)});
-                        }
+                    if (visited.has(idx) || lattice[idx] < threshold) continue;
+                    const contour = traceSimpleContour(lattice, size, x, y, threshold, visited);
+                    if (contour.length > 2) {
+                        paths.push({d: `M${contour[0].x} ${contour[0].y} ${contour.slice(1).map(p => `L${p.x} ${p.y}`).join(' ')} Z`});
                     }
                 }
             }
-
             return paths;
         }
-
-        /**
-         * Trace contour using simplified marching squares
-         */
-        function traceContour(lattice, size, startX, startY, threshold, visited) {
+        
+        function traceSimpleContour(lattice, size, startX, startY, threshold, visited) {
             const contour = [];
-            let x = startX;
-            let y = startY;
-            let dir = 0; // 0=right, 1=down, 2=left, 3=up
-            const maxLength = size * 2;
-
+            let x = startX, y = startY, dir = 0;
+            const maxLen = size * 2;
             do {
                 const idx = y * size + x;
-                if (visited.has(idx)) break;
+                if (visited.has(idx) || contour.length > maxLen) break;
                 visited.add(idx);
                 contour.push({x, y});
-
-                // Find next direction using right-hand rule
-                const right = (x + 1 < size) ? lattice[y * size + (x + 1)] >= threshold : false;
-                const down = (y + 1 < size) ? lattice[(y + 1) * size + x] >= threshold : false;
-                const left = (x - 1 >= 0) ? lattice[y * size + (x - 1)] >= threshold : false;
-                const up = (y - 1 >= 0) ? lattice[(y - 1) * size + x] >= threshold : false;
-
-                if (dir === 0 && right) { x++; }
-                else if (dir === 1 && down) { y++; }
-                else if (dir === 2 && left) { x--; }
-                else if (dir === 3 && up) { y--; }
-                else {
-                    dir = (dir + 1) % 4;
-                }
-
-                if (contour.length > maxLength) break;
-
+                const right = (x + 1 < size) && lattice[y * size + (x + 1)] >= threshold;
+                const down = (y + 1 < size) && lattice[(y + 1) * size + x] >= threshold;
+                const left = (x - 1 >= 0) && lattice[y * size + (x - 1)] >= threshold;
+                const up = (y - 1 >= 0) && lattice[(y - 1) * size + x] >= threshold;
+                if (dir === 0 && right) x++;
+                else if (dir === 1 && down) y++;
+                else if (dir === 2 && left) x--;
+                else if (dir === 3 && up) y--;
+                else dir = (dir + 1) % 4;
             } while (contour.length < 2 || (x !== startX || y !== startY));
-
             return contour;
-        }
-
-        /**
-         * Convert contour points to SVG path
-         */
-        function contourToSVGPath(contour) {
-            if (contour.length === 0) return '';
-            if (contour.length === 1) return `M${contour[0].x} ${contour[0].y}`;
-
-            let path = `M${contour[0].x} ${contour[0].y}`;
-            for (let i = 1; i < contour.length; i++) {
-                path += ` L${contour[i].x} ${contour[i].y}`;
-            }
-            if (contour.length > 2) {
-                path += ' Z';
-            }
-            return path;
         }
 
         /**
