@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CE Fractal Sobel: Semantic Edge Detection</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Monaco', 'Menlo', monospace;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4a9eff;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    .subtitle {
+      color: #888;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .input-section {
+      margin-bottom: 30px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      padding: 15px;
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 4px;
+    }
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #5aaeff;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .panel {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 20px;
+    }
+    .panel h2 {
+      color: #4a9eff;
+      font-size: 18px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+    .word-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .word {
+      padding: 6px 12px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      font-size: 12px;
+      position: relative;
+    }
+    .word.edge {
+      border: 2px solid #ff6b6b;
+      background: #3a2a2a;
+    }
+    .word.edge.strong {
+      border-color: #ff4444;
+      box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+    }
+    .word.edge.medium {
+      border-color: #ff8888;
+    }
+    .word.edge.weak {
+      border-color: #ffaaaa;
+    }
+    .word-energy {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .gradient-vis {
+      margin-top: 20px;
+    }
+    .gradient-bar {
+      height: 4px;
+      background: linear-gradient(to right, #1a1a1a, #4a9eff, #1a1a1a);
+      margin: 8px 0;
+      border-radius: 2px;
+      position: relative;
+    }
+    .edge-marker {
+      position: absolute;
+      top: -2px;
+      width: 2px;
+      height: 8px;
+      background: #ff6b6b;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .stat {
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 18px;
+      color: #4a9eff;
+      font-weight: bold;
+    }
+    .witness-status {
+      margin-top: 15px;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      border-left: 4px solid #4a9eff;
+    }
+    .witness-status.low {
+      border-left-color: #ff6b6b;
+    }
+    .witness-status.medium {
+      border-left-color: #ffaa44;
+    }
+    .fractal-decomp {
+      font-size: 11px;
+      color: #888;
+      margin-top: 10px;
+    }
+    .fractal-decomp .letter {
+      display: inline-block;
+      margin: 2px;
+      padding: 2px 6px;
+      background: #2a2a2a;
+      border-radius: 2px;
+    }
+    .fractal-decomp .syllable {
+      border-left: 2px solid #4a9eff;
+      padding-left: 4px;
+      margin: 4px 0;
+    }
+    .transformer-map {
+      margin-top: 20px;
+      font-size: 12px;
+    }
+    .transformer-map .mapping {
+      margin: 8px 0;
+      padding: 8px;
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+    code {
+      color: #4a9eff;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CE Fractal Sobel: Semantic Edge Detection</h1>
+    <p class="subtitle">Detecting semantic boundaries using fractal word fields and field operators</p>
+    
+    <div class="input-section">
+      <textarea id="sentenceInput" placeholder="Enter a sentence to analyze...">The quick brown fox jumps over the lazy dog</textarea>
+      <button onclick="analyzeSentence()">Analyze Sentence</button>
+    </div>
+    
+    <div class="results">
+      <div class="panel">
+        <h2>Semantic Field Grid</h2>
+        <div id="wordGrid" class="word-grid"></div>
+        <div id="gradientVis" class="gradient-vis"></div>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Coherence</div>
+            <div class="stat-value" id="coherenceValue">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Edges Detected</div>
+            <div class="stat-value" id="edgesValue">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Antclock</div>
+            <div class="stat-value" id="antclockValue">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">κ Bound</div>
+            <div class="stat-value" id="kappaValue">—</div>
+          </div>
+        </div>
+        <div id="witnessStatus" class="witness-status">
+          <strong>Witness:</strong> <span id="witnessText">—</span>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <h2>Fractal Decomposition</h2>
+        <div id="fractalDecomp"></div>
+        
+        <h2 style="margin-top: 30px;">Transformer Mapping</h2>
+        <div id="transformerMap" class="transformer-map"></div>
+        
+        <h2 style="margin-top: 30px;">Edge Details</h2>
+        <div id="edgeDetails"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="ce_fractal_sobel.js"></script>
+  <script>
+    const sobel = new CEFractalSobel({ kappa: 0.35 });
+    
+    function analyzeSentence() {
+      const input = document.getElementById('sentenceInput').value.trim();
+      if (!input) return;
+      
+      const result = sobel.processSentence(input);
+      
+      // Display word grid with edges
+      displayWordGrid(result.words, result.edges);
+      
+      // Display gradients
+      displayGradients(sobel.gradients, result.edges);
+      
+      // Display stats
+      document.getElementById('coherenceValue').textContent = result.coherence.toFixed(3);
+      document.getElementById('edgesValue').textContent = result.edges.length;
+      document.getElementById('antclockValue').textContent = result.antclock;
+      document.getElementById('kappaValue').textContent = sobel.kappa.toFixed(2);
+      
+      // Display witness status
+      const witnessEl = document.getElementById('witnessStatus');
+      const witnessText = document.getElementById('witnessText');
+      witnessText.textContent = `Coherence: ${result.witness.coherence.toFixed(3)}, Stability: ${result.witness.stability.toFixed(3)}`;
+      
+      if (result.witness.coherence < 0.65) {
+        witnessEl.className = 'witness-status low';
+      } else if (result.witness.coherence < 0.85) {
+        witnessEl.className = 'witness-status medium';
+      } else {
+        witnessEl.className = 'witness-status';
+      }
+      
+      // Display fractal decomposition
+      displayFractalDecomp(result.words);
+      
+      // Display transformer mapping
+      displayTransformerMap(result.words);
+      
+      // Display edge details
+      displayEdgeDetails(result.edges, sobel.gradients);
+    }
+    
+    function displayWordGrid(words, edges) {
+      const grid = document.getElementById('wordGrid');
+      grid.innerHTML = '';
+      
+      const edgeMap = new Map(edges.map(e => [e.position, e]));
+      
+      words.forEach((word, i) => {
+        const wordEl = document.createElement('div');
+        wordEl.className = 'word';
+        
+        const edge = edgeMap.get(i);
+        if (edge) {
+          wordEl.classList.add('edge', edge.type);
+          wordEl.title = `Edge: ${edge.type}, magnitude: ${edge.magnitude.toFixed(3)}`;
+        }
+        
+        wordEl.textContent = word.text;
+        const energyEl = document.createElement('div');
+        energyEl.className = 'word-energy';
+        energyEl.textContent = `E: ${word.energy.toFixed(2)}`;
+        wordEl.appendChild(energyEl);
+        
+        grid.appendChild(wordEl);
+      });
+    }
+    
+    function displayGradients(gradients, edges) {
+      const vis = document.getElementById('gradientVis');
+      vis.innerHTML = '<h3 style="font-size: 14px; margin-bottom: 10px;">Gradient Magnitude</h3>';
+      
+      const maxMag = Math.max(...gradients.map(g => g.magnitude), 0.1);
+      const bar = document.createElement('div');
+      bar.className = 'gradient-bar';
+      bar.style.width = '100%';
+      
+      edges.forEach(edge => {
+        const marker = document.createElement('div');
+        marker.className = 'edge-marker';
+        marker.style.left = `${(edge.position / (gradients.length - 1)) * 100}%`;
+        marker.title = `${edge.word}: ${edge.magnitude.toFixed(3)}`;
+        bar.appendChild(marker);
+      });
+      
+      vis.appendChild(bar);
+      
+      // Gradient values
+      const values = document.createElement('div');
+      values.style.marginTop = '10px';
+      values.style.fontSize = '10px';
+      values.style.color = '#888';
+      values.textContent = gradients.map(g => g.magnitude.toFixed(2)).join(' | ');
+      vis.appendChild(values);
+    }
+    
+    function displayFractalDecomp(words) {
+      const decomp = document.getElementById('fractalDecomp');
+      decomp.innerHTML = '';
+      
+      words.forEach(word => {
+        const wordDiv = document.createElement('div');
+        wordDiv.style.marginBottom = '15px';
+        
+        const wordHeader = document.createElement('div');
+        wordHeader.style.fontWeight = 'bold';
+        wordHeader.style.color = '#4a9eff';
+        wordHeader.textContent = word.text;
+        wordDiv.appendChild(wordHeader);
+        
+        word.syllables.forEach(syllable => {
+          const sylDiv = document.createElement('div');
+          sylDiv.className = 'fractal-decomp syllable';
+          sylDiv.textContent = `Syllable: ${syllable.text} (E: ${syllable.energy.toFixed(2)})`;
+          
+          const lettersDiv = document.createElement('div');
+          lettersDiv.style.marginLeft = '10px';
+          syllable.letters.forEach(letter => {
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'letter';
+            letterSpan.textContent = letter.letter;
+            letterSpan.title = `φ: ${letter.phi.toFixed(2)}, E: ${letter.energy.toFixed(2)}`;
+            lettersDiv.appendChild(letterSpan);
+          });
+          sylDiv.appendChild(lettersDiv);
+          wordDiv.appendChild(sylDiv);
+        });
+        
+        const coherenceDiv = document.createElement('div');
+        coherenceDiv.style.fontSize = '10px';
+        coherenceDiv.style.color = '#888';
+        coherenceDiv.style.marginTop = '4px';
+        coherenceDiv.textContent = `χ(W) = ${word.coherence.toFixed(3)}`;
+        wordDiv.appendChild(coherenceDiv);
+        
+        decomp.appendChild(wordDiv);
+      });
+    }
+    
+    function displayTransformerMap(words) {
+      const mapDiv = document.getElementById('transformerMap');
+      mapDiv.innerHTML = '';
+      
+      // Map to transformer space
+      const query = words.map(w => w.energy);
+      const keys = words.map(w => w.text);
+      const values = words.map(w => w.text);
+      
+      const mapping = sobel.mapTransformer(query, keys, values);
+      
+      const qDiv = document.createElement('div');
+      qDiv.className = 'mapping';
+      qDiv.innerHTML = `<strong>Q → []</strong> (memory-gradient): <code>${mapping.q.length} gradients</code>`;
+      mapDiv.appendChild(qDiv);
+      
+      const kDiv = document.createElement('div');
+      kDiv.className = 'mapping';
+      kDiv.innerHTML = `<strong>K → {}</strong> (curvature anchors): <code>${mapping.k.length} domains</code>`;
+      mapDiv.appendChild(kDiv);
+      
+      const vDiv = document.createElement('div');
+      vDiv.className = 'mapping';
+      vDiv.innerHTML = `<strong>V → ()</strong> (morphism action): <code>${mapping.v.length} transforms</code>`;
+      mapDiv.appendChild(vDiv);
+      
+      const attDiv = document.createElement('div');
+      attDiv.className = 'mapping';
+      attDiv.innerHTML = `<strong>Attention → &lt;&gt;</strong> (witness pressure): <code>${mapping.attention.length} pressures</code>`;
+      mapDiv.appendChild(attDiv);
+    }
+    
+    function displayEdgeDetails(edges, gradients) {
+      const details = document.getElementById('edgeDetails');
+      details.innerHTML = '';
+      
+      if (edges.length === 0) {
+        details.textContent = 'No semantic edges detected.';
+        return;
+      }
+      
+      edges.forEach(edge => {
+        const edgeDiv = document.createElement('div');
+        edgeDiv.style.marginBottom = '10px';
+        edgeDiv.style.padding = '10px';
+        edgeDiv.style.background = '#2a2a2a';
+        edgeDiv.style.borderRadius = '4px';
+        edgeDiv.style.borderLeft = '3px solid #ff6b6b';
+        
+        edgeDiv.innerHTML = `
+          <div style="font-weight: bold; color: #ff6b6b;">${edge.word}</div>
+          <div style="font-size: 11px; color: #888; margin-top: 4px;">
+            Position: ${edge.position} | 
+            Magnitude: ${edge.magnitude.toFixed(3)} | 
+            Type: ${edge.type} | 
+            Direction: ${(edge.direction * 180 / Math.PI).toFixed(1)}°
+          </div>
+        `;
+        
+        details.appendChild(edgeDiv);
+      });
+    }
+    
+    // Analyze on load
+    window.addEventListener('load', () => {
+      analyzeSentence();
+    });
+  </script>
+</body>
+</html>
+
