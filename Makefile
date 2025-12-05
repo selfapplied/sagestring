@@ -14,34 +14,11 @@ PYTHON := .venv/bin/python
 all: demo
 
 # Start server and open guardian demo with proper readiness checking
-demo: scripts/wait_for_server.sh scripts/check_server_status.sh scripts/self_managing_server.py
+demo: scripts/self_managing_server.py
 	@echo "🌟 Starting Guardian Consciousness Ecology..."
-	@if [ -f $(READY_FILE) ]; then \
-		echo "📁 Ready file exists - checking if server is already running..."; \
-		READY_CONTENT=$$(cat $(READY_FILE) 2>/dev/null); \
-		if [[ $$READY_CONTENT =~ READY:$(PORT):[0-9]+:([0-9]+) ]]; then \
-			SERVER_PID="$${BASH_REMATCH[1]}"; \
-			if kill -0 "$$SERVER_PID" 2>/dev/null; then \
-				./scripts/check_server_status.sh $(PORT) $(READY_FILE); \
-				if [ $$? -eq 0 ]; then \
-					echo "✅ Server is already running - opening demo..."; \
-					open $(URL); \
-					echo "💡 Server was already running"; \
-					exit 0; \
-				fi; \
-			else \
-				echo "📁 Server process not found - cleaning up stale ready file..."; \
-				rm -f $(READY_FILE); \
-			fi; \
-		else \
-			echo "📁 Invalid ready file format - cleaning up..."; \
-			rm -f $(READY_FILE); \
-		fi; \
-	fi
 	@echo "📡 Launching self-managing HTTP server on port $(PORT)..."
-	@MPLCONFIGDIR=$(MPLCONFIGDIR) $(PYTHON) scripts/self_managing_server.py $(PORT) $(READY_FILE) 300 &
+	@MPLCONFIGDIR=$(MPLCONFIGDIR) scripts/self_managing_server.py $(PORT) $(READY_FILE) 300 &
 	@echo "⏳ Waiting for server to be ready..."
-	@./scripts/wait_for_server.sh $(PORT) $(MAX_WAIT) $(READY_FILE)
 	@if [ -f $(READY_FILE) ]; then \
 		echo "🌐 Opening spatiotemporal continuity demo..."; \
 		open $(URL); \

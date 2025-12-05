@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SageString Visual Systems</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 30px;
+        }
+
+        .title {
+            font-size: 3em;
+            color: #4a9eff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(74, 158, 255, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .tagline {
+            font-size: 1.1em;
+            color: #ccc;
+            font-style: italic;
+        }
+
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .system-card {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .system-card:hover {
+            transform: translateY(-5px);
+            border-color: #4a9eff;
+            box-shadow: 0 10px 30px rgba(74, 158, 255, 0.2);
+        }
+
+        .system-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4a9eff, #ff6b6b, #4a9eff);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .system-card:hover::before {
+            opacity: 1;
+        }
+
+        .system-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .system-title {
+            font-size: 1.5em;
+            color: #4a9eff;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .system-description {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .system-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .system-features li {
+            color: #888;
+            margin-bottom: 5px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .system-features li::before {
+            content: '▶';
+            color: #4a9eff;
+            position: absolute;
+            left: 0;
+        }
+
+        .launch-btn {
+            display: inline-block;
+            background: #4a9eff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .launch-btn:hover {
+            background: #3a8eff;
+            transform: scale(1.05);
+        }
+
+        .featured-system {
+            border: 2px solid #4a9eff;
+            background: rgba(74, 158, 255, 0.05);
+        }
+
+        .featured-system .system-title {
+            color: #6ab8ff;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #333;
+            color: #666;
+        }
+
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tech-item {
+            background: #2a2a2a;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🌟 SageString</h1>
+            <h2 class="subtitle">Visual Systems & Pattern Recognition</h2>
+            <p class="tagline">Self-referential engines that perceive and generate their own patterns</p>
+        </div>
+
+        <div class="systems-grid">
+            <div class="system-card featured-system" onclick="launchSystem('consolidated')">
+                <div class="system-icon">🎭</div>
+                <h3 class="system-title">Consolidated Visual Systems</h3>
+                <p class="system-description">
+                    Complete collection of all visual systems in one unified interface.
+                    Explore self-referential Sobel systems, SVG kernels, and pattern evolution.
+                </p>
+                <ul class="system-features">
+                    <li>Self-referential Sobel system with ballast</li>
+                    <li>SVG kernel pattern recognition</li>
+                    <li>Real-time evolution and visualization</li>
+                    <li>Interactive parameter controls</li>
+                    <li>Multi-system comparison</li>
+                </ul>
+                <button class="launch-btn">🚀 Launch Consolidated Demo</button>
+            </div>
+
+            <div class="system-card" onclick="launchSystem('sobel')">
+                <div class="system-icon">🔮</div>
+                <h3 class="system-title">Self-Referential Sobel System</h3>
+                <p class="system-description">
+                    Cellular automata where objects detect their own Sobel boundaries and generate
+                    wireframe representations through recursive identity retention.
+                </p>
+                <ul class="system-features">
+                    <li>Sobel boundary detection</li>
+                    <li>Feigenbaum phase dynamics</li>
+                    <li>Ballast stability system</li>
+                    <li>Self-generated wireframes</li>
+                    <li>Population rebirth cycles</li>
+                </ul>
+                <button class="launch-btn">🎯 Launch Sobel System</button>
+            </div>
+
+            <div class="system-card" onclick="launchSystem('kernel')">
+                <div class="system-icon">🎨</div>
+                <h3 class="system-title">SVG Kernel System</h3>
+                <p class="system-description">
+                    Declarative pattern recognition where SVG shapes become cellular kernels
+                    that evolve and detect instances of themselves through lattice dynamics.
+                </p>
+                <ul class="system-features">
+                    <li>SVG-to-lattice discretization</li>
+                    <li>FEG harmonic evolution</li>
+                    <li>Scale/rotation invariance</li>
+                    <li>Self-reflective pattern matching</li>
+                    <li>Vector re-synthesis</li>
+                </ul>
+                <button class="launch-btn">🎨 Launch Kernel System</button>
+            </div>
+
+            <div class="system-card" onclick="launchSystem('research')">
+                <div class="system-icon">🔬</div>
+                <h3 class="system-title">Research Overview</h3>
+                <p class="system-description">
+                    Comprehensive documentation and theoretical background for all visual systems,
+                    including research context, technical architecture, and future directions.
+                </p>
+                <ul class="system-features">
+                    <li>Technical specifications</li>
+                    <li>Research methodology</li>
+                    <li>Mathematical foundations</li>
+                    <li>System comparisons</li>
+                    <li>Future development roadmap</li>
+                </ul>
+                <button class="launch-btn">📚 View Research Docs</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="tech-stack">
+                <span class="tech-item">JavaScript</span>
+                <span class="tech-item">HTML5 Canvas</span>
+                <span class="tech-item">SVG</span>
+                <span class="tech-item">WebGL Ready</span>
+                <span class="tech-item">Real-time Processing</span>
+            </div>
+            <p>
+                Built for exploring self-organizing computation, harmonic analysis, and emergent pattern recognition.<br>
+                Inspired by dynamical systems, category theory, and the mathematics of self-reference.
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                🧬 <em>"Systems that can see themselves in the patterns they create"</em>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function launchSystem(system) {
+            const urls = {
+                'consolidated': 'sagestring_visual_systems.html',
+                'sobel': 'self_referential_sobel_system.html',
+                'kernel': 'svg_kernel_demo.html',
+                'research': 'README_visual_systems.md'
+            };
+
+            if (urls[system]) {
+                window.open(urls[system], '_blank');
+            }
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.system-card');
+
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Add a subtle animation to the featured system
+            const featuredCard = document.querySelector('.featured-system');
+            if (featuredCard) {
+                setInterval(() => {
+                    featuredCard.style.boxShadow = `0 0 30px rgba(74, 158, 255, ${0.1 + Math.sin(Date.now() * 0.003) * 0.1})`;
+                }, 50);
+            }
+        });
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SVG Kernel Mirror: Self-Reflective Pattern Recognition</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .kernel-display {
+            width: 300px;
+            height: 300px;
+            background: #000;
+            border: 1px solid #444;
+            display: inline-block;
+        }
+        .lattice-viz {
+            width: 256px;
+            height: 256px;
+            background: #000;
+            border: 1px solid #444;
+            image-rendering: pixelated;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #3a3a3a;
+        }
+        .status {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+        .kernel-xml {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            padding: 10px;
+            font-size: 11px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVG Kernel Mirror: Self-Reflective Pattern Recognition</h1>
+    <p>The kernel defines itself, discretizes into a lattice, evolves via FEG operators, and reflects back as SVG.</p>
+
+    <div class="container">
+        <div class="panel">
+            <h3>Kernel Definition</h3>
+            <div class="kernel-xml" id="kernel-xml"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Original SVG Kernel</h3>
+            <div class="kernel-display" id="original-kernel"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Discretized Lattice</h3>
+            <canvas class="lattice-viz" id="discrete-lattice" width="256" height="256"></canvas>
+        </div>
+
+        <div class="panel">
+            <h3>Evolved Lattice (Step 1)</h3>
+            <canvas class="lattice-viz" id="evolved-lattice-1" width="256" height="256"></canvas>
+        </div>
+
+        <div class="panel">
+            <h3>Evolved Lattice (Step 2)</h3>
+            <canvas class="lattice-viz" id="evolved-lattice-2" width="256" height="256"></canvas>
+        </div>
+
+        <div class="panel">
+            <h3>Vectorized Back to SVG</h3>
+            <div class="kernel-display" id="reflected-svg"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="initializeSystem()">Initialize Kernel</button>
+        <button onclick="discretizeKernel()">Discretize to Lattice</button>
+        <button onclick="evolveStep()">Evolve One Step</button>
+        <button onclick="evolveMultiple(5)">Evolve 5 Steps</button>
+        <button onclick="vectorizeBack()">Vectorize to SVG</button>
+        <button onclick="runFullCycle()">Run Full Cycle</button>
+        <button onclick="resetSystem()">Reset</button>
+    </div>
+
+    <div class="status" id="status">Ready to initialize...</div>
+
+    <script src="svg_kernel_system.js"></script>
+    <script>
+        let kernelSystem;
+        let currentKernelId = 'spiral';
+
+        // Sample kernel definitions
+        const kernelDefinitions = {
+            spiral: `<kernel id="spiral" energy="1.2" power="2.0">
+  <shape>
+    <path d="M128 128 L128 108 A20 20 0 0 1 148 128 L168 128 A40 40 0 0 0 128 168 L128 188 A60 60 0 0 1 68 128 L48 128 A80 80 0 0 0 128 48 Z"
+          stroke="#00ff88" stroke-width="3" fill="none"/>
+  </shape>
+  <discrete>
+    <lattice size="256" boundary="wrap"/>
+  </discrete>
+  <invariants>
+    <scale-invariance enabled="true"/>
+    <mirror-symmetry enabled="true"/>
+  </invariants>
+</kernel>`,
+
+            wave: `<kernel id="wave" energy="1.0" power="1.8">
+  <shape>
+    <path d="M0 128 Q64 64 128 128 T256 128"
+          stroke="#0088ff" stroke-width="4" fill="none"/>
+  </shape>
+  <discrete>
+    <lattice size="256" boundary="wrap"/>
+  </discrete>
+  <invariants>
+    <scale-invariance enabled="true"/>
+  </invariants>
+</kernel>`,
+
+            circle: `<kernel id="circle" energy="1.5" power="2.2">
+  <shape>
+    <circle cx="128" cy="128" r="60" stroke="#ff8800" stroke-width="4" fill="none"/>
+  </shape>
+  <discrete>
+    <lattice size="256" boundary="wrap"/>
+  </discrete>
+  <invariants>
+    <scale-invariance enabled="true"/>
+    <rotation-invariance enabled="true"/>
+  </invariants>
+</kernel>`
+        };
+
+        function initializeSystem() {
+            kernelSystem = new SVGKernelSystem();
+
+            // Parse kernel
+            const kernels = kernelSystem.parseKernel(kernelDefinitions.spiral);
+            updateStatus(`Initialized kernel: ${kernels[0].id}`);
+
+            // Display kernel XML
+            document.getElementById('kernel-xml').textContent = kernelDefinitions.spiral;
+
+            // Display original SVG
+            displayOriginalKernel();
+        }
+
+        function displayOriginalKernel() {
+            const container = document.getElementById('original-kernel');
+            container.innerHTML = kernelDefinitions.spiral.replace('<kernel', '<svg').replace('</kernel>', '</svg>');
+        }
+
+        function discretizeKernel() {
+            if (!kernelSystem) {
+                updateStatus("Initialize system first!");
+                return;
+            }
+
+            kernelSystem.discretizeKernel(kernelSystem.kernels.get(currentKernelId));
+            updateStatus("Kernel discretized to lattice");
+
+            // Visualize lattice
+            visualizeLattice('discrete-lattice', kernelSystem.kernels.get(currentKernelId).lattice);
+        }
+
+        function evolveStep() {
+            if (!kernelSystem) return;
+
+            const evolved = kernelSystem.evolveLattice(currentKernelId);
+            if (evolved) {
+                updateStatus("Lattice evolved one step");
+
+                // Visualize evolved lattice
+                const targetId = document.getElementById('evolved-lattice-1').style.display !== 'none' ?
+                    'evolved-lattice-2' : 'evolved-lattice-1';
+
+                visualizeLattice(targetId, evolved);
+
+                // Hide the other one for alternating display
+                const otherId = targetId === 'evolved-lattice-1' ? 'evolved-lattice-2' : 'evolved-lattice-1';
+                document.getElementById(otherId).style.display = 'none';
+                document.getElementById(targetId).style.display = 'block';
+            }
+        }
+
+        function evolveMultiple(steps) {
+            if (!kernelSystem) return;
+
+            for (let i = 0; i < steps; i++) {
+                kernelSystem.evolveLattice(currentKernelId);
+            }
+            updateStatus(`Evolved ${steps} steps`);
+
+            // Show final result
+            const kernel = kernelSystem.kernels.get(currentKernelId);
+            visualizeLattice('evolved-lattice-2', kernel.lattice);
+            document.getElementById('evolved-lattice-1').style.display = 'none';
+            document.getElementById('evolved-lattice-2').style.display = 'block';
+        }
+
+        function vectorizeBack() {
+            if (!kernelSystem) return;
+
+            const svgString = kernelSystem.latticeToSVG(currentKernelId);
+            if (svgString) {
+                document.getElementById('reflected-svg').innerHTML = svgString;
+                updateStatus("Lattice vectorized back to SVG");
+            }
+        }
+
+        function runFullCycle() {
+            initializeSystem();
+            setTimeout(() => {
+                discretizeKernel();
+                setTimeout(() => {
+                    evolveMultiple(3);
+                    setTimeout(() => {
+                        vectorizeBack();
+                        updateStatus("Full cycle completed: SVG → Lattice → Evolution → SVG");
+                    }, 100);
+                }, 100);
+            }, 100);
+        }
+
+        function resetSystem() {
+            kernelSystem = null;
+            document.getElementById('kernel-xml').textContent = '';
+            document.getElementById('original-kernel').innerHTML = '';
+            clearCanvases();
+            updateStatus("System reset");
+        }
+
+        function visualizeLattice(canvasId, lattice) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const size = Math.sqrt(lattice.length);
+            const imageData = ctx.createImageData(size, size);
+
+            for (let i = 0; i < lattice.length; i++) {
+                const val = Math.floor(lattice[i] * 255);
+                imageData.data[i * 4] = val;     // R
+                imageData.data[i * 4 + 1] = val; // G
+                imageData.data[i * 4 + 2] = val; // B
+                imageData.data[i * 4 + 3] = 255; // A
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function clearCanvases() {
+            const canvases = document.querySelectorAll('.lattice-viz');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+
+            document.getElementById('reflected-svg').innerHTML = '';
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            updateStatus("System ready. Click 'Initialize Kernel' to begin.");
+        };
+    </script>
+</body>
+</html>
+
+

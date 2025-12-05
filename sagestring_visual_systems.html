@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SageString Visual Systems: Self-Referential Pattern Recognition</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .tab-btn.active {
+            background: #4a9eff;
+            border-color: #4a9eff;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Self-Referential Sobel System Styles */
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .grid-display {
+            width: 600px;
+            height: 600px;
+            background: #000;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .controls {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+
+        .stats {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .object-info {
+            background: #111;
+            border: 1px solid #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3a3a3a;
+        }
+
+        button.active {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+
+        .phase-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .phase-fixed { background: #666; }
+        .phase-osc28 { background: #4a9eff; animation: pulse 28s infinite; }
+        .phase-osc37 { background: #ff6b6b; animation: pulse 37s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .stability-bar {
+            display: inline-block;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-left: 8px;
+            width: 60px;
+        }
+
+        .stability-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        /* SVG Kernel System Styles */
+        .kernel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .kernel-panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .kernel-display {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border: 1px solid #444;
+            display: block;
+            margin: 10px 0;
+        }
+
+        /* General Styles */
+        .section-title {
+            color: #4a9eff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            color: #ccc;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .feature-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .feature-item h4 {
+            color: #4a9eff;
+            margin: 0 0 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌟 SageString Visual Systems</h1>
+        <p>Self-Referential Pattern Recognition Engines | SVG Kernels | Cellular Automata | Harmonic Operators</p>
+    </div>
+
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('sobel')">🔮 Self-Referential Sobel System</button>
+            <button class="tab-btn" onclick="switchTab('kernel')">🎨 SVG Kernel System</button>
+            <button class="tab-btn" onclick="switchTab('about')">📖 About</button>
+        </div>
+
+        <!-- Self-Referential Sobel System Tab -->
+        <div id="sobel-tab" class="tab-content active">
+            <div class="section-title">Self-Referential Sobel System: Sobel-Bounded Phase Objects</div>
+            <div class="description">
+                Objects are defined by Sobel boundary detection, temporal phases, and witness curvature.
+                Each cell updates through local Sobel gradients, discrete Feigenbaum phase mapping, and recursive identity retention.
+                Objects appear as wireframe glyphs from their own Sobel signatures with ballast system stability.
+            </div>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>🎯 Sobel Boundaries</h4>
+                    Real-time edge detection defines object boundaries and stability
+                </div>
+                <div class="feature-item">
+                    <h4>⏰ Phase Dynamics</h4>
+                    Fixed, oscillatory-28Hz, oscillatory-37Hz with Feigenbaum bifurcation
+                </div>
+                <div class="feature-item">
+                    <h4>⚖️ Ballast System</h4>
+                    Accumulated stability mass, conservation laws, hierarchical tiers
+                </div>
+                <div class="feature-item">
+                    <h4>🔄 Self-Reflection</h4>
+                    Objects detect their own boundaries and generate wireframe representations
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid-display" id="grid-display">
+                    <canvas class="grid-canvas" id="grid-canvas" width="600" height="600"></canvas>
+                    <svg class="grid-canvas" id="grid-svg" width="600" height="600"></svg>
+                </div>
+
+                <div class="controls">
+                    <h3>System Controls</h3>
+                    <div>
+                        <button onclick="toggleRunning()" id="run-btn">▶️ Start</button>
+                        <button onclick="resetSystem()">🔄 Reset</button>
+                        <button onclick="seedObjects()">🌱 Seed Objects</button>
+                    </div>
+
+                    <h4>Phase Injection</h4>
+                    <div>
+                        <button onclick="injectPhase('fixed')">Fixed</button>
+                        <button onclick="injectPhase('osc28')">Osc-28</button>
+                        <button onclick="injectPhase('osc37')">Osc-37</button>
+                    </div>
+
+                    <h4>Ballast Injection</h4>
+                    <div>
+                        <button onclick="injectBallastMass(1.0)">Light Ballast</button>
+                        <button onclick="injectBallastMass(5.0)">Medium Ballast</button>
+                        <button onclick="injectBallastMass(10.0)">Heavy Ballast</button>
+                    </div>
+
+                    <h4>Parameters</h4>
+                    <div>
+                        <label>Grid Size: <input type="range" id="grid-size" min="32" max="128" value="64" oninput="updateGridSize()"></label>
+                        <br>
+                        <label>Stability Threshold: <input type="range" id="stability-threshold" min="0" max="1" step="0.1" value="0.3" oninput="updateStabilityThreshold()"></label>
+                        <br>
+                        <label>Sobel Sensitivity: <input type="range" id="sobel-sensitivity" min="10" max="100" value="50" oninput="updateSobelSensitivity()"></label>
+                        <br>
+                        <label>Conservation Factor: <input type="range" id="conservation-factor" min="0.8" max="0.99" step="0.01" value="0.95" oninput="updateConservationFactor()"></label>
+                        <br>
+                        <label>Ballast Attraction: <input type="range" id="ballast-attraction" min="0" max="0.2" step="0.01" value="0.05" oninput="updateBallastAttraction()"></label>
+                    </div>
+
+                    <h4>Rendering Mode</h4>
+                    <div>
+                        <button onclick="setRenderMode('wireframe')" class="active" id="wireframe-btn">Wireframe</button>
+                        <button onclick="setRenderMode('filled')" id="filled-btn">Filled</button>
+                        <button onclick="setRenderMode('gradient')" id="gradient-btn">Gradient</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats" id="stats">
+                <h3>System Statistics</h3>
+                <div>Frame: <span id="frame-count">0</span></div>
+                <div>Active Objects: <span id="object-count">0</span></div>
+                <div>Average Stability: <span id="avg-stability">0.00</span></div>
+                <div>Phase Distribution: Fixed=<span id="phase-fixed-count">0</span>, Osc28=<span id="phase-osc28-count">0</span>, Osc37=<span id="phase-osc37-count">0</span></div>
+                <div>Witness Coherence: <span id="witness-coherence">0.00</span></div>
+                <div>Ballast Mass: <span id="total-ballast-mass">0.00</span> | Resonance: <span id="ballast-resonance">0.00</span></div>
+                <div>Ballast Fields: <span id="ballast-field-count">0</span> | Memory Footprints: <span id="memory-footprint-count">0</span></div>
+            </div>
+
+            <div class="stats" id="object-list">
+                <h3>Active Objects</h3>
+                <div id="object-details"></div>
+            </div>
+        </div>
+
+        <!-- SVG Kernel System Tab -->
+        <div id="kernel-tab" class="tab-content">
+            <div class="section-title">SVG Kernel System: Declarative Pattern Recognition</div>
+            <div class="description">
+                SVG shapes become pattern recognition kernels through lattice discretization.
+                FEG operators drive evolution, creating self-reflective pattern matching where
+                kernels detect instances of themselves.
+            </div>
+
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>📐 SVG Kernels</h4>
+                    Declarative geometry definitions become pattern templates
+                </div>
+                <div class="feature-item">
+                    <h4>🔲 Lattice Discretization</h4>
+                    Vector shapes converted to cellular representations
+                </div>
+                <div class="feature-item">
+                    <h4>🌊 FEG Evolution</h4>
+                    Field Equation Graphics operators drive pattern evolution
+                </div>
+                <div class="feature-item">
+                    <h4>🔄 Self-Reflection</h4>
+                    Kernels evolve and detect their own patterns
+                </div>
+            </div>
+
+            <div class="kernel-grid">
+                <div class="kernel-panel">
+                    <h3>Spiral Kernel</h3>
+                    <svg class="kernel-display" id="spiral-kernel"></svg>
+                    <div class="controls">
+                        <button onclick="createSpiralKernel()">Create Spiral</button>
+                        <button onclick="evolveSpiralKernel()">Evolve</button>
+                        <button onclick="vectorizeSpiral()">Vectorize</button>
+                    </div>
+                </div>
+
+                <div class="kernel-panel">
+                    <h3>Wave Kernel</h3>
+                    <svg class="kernel-display" id="wave-kernel"></svg>
+                    <div class="controls">
+                        <button onclick="createWaveKernel()">Create Wave</button>
+                        <button onclick="evolveWaveKernel()">Evolve</button>
+                        <button onclick="vectorizeWave()">Vectorize</button>
+                    </div>
+                </div>
+
+                <div class="kernel-panel">
+                    <h3>Circle Kernel</h3>
+                    <svg class="kernel-display" id="circle-kernel"></svg>
+                    <div class="controls">
+                        <button onclick="createCircleKernel()">Create Circle</button>
+                        <button onclick="evolveCircleKernel()">Evolve</button>
+                        <button onclick="vectorizeCircle()">Vectorize</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kernel-panel" style="margin-top: 20px;">
+                <h3>Kernel Statistics</h3>
+                <div id="kernel-stats">No kernels active</div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="about-tab" class="tab-content">
+            <div class="section-title">About SageString Visual Systems</div>
+
+            <div class="description">
+                This consolidated demo showcases multiple self-referential visual systems developed as part of the SageString project.
+                Each system explores different aspects of pattern recognition, emergence, and self-reflection in computational media.
+            </div>
+
+            <h3>🔬 Research Context</h3>
+            <p>
+                These systems are inspired by Category Theory, Dynamical Systems, and Harmonic Analysis.
+                The goal is to create computational systems that can recognize patterns in themselves,
+                evolving through feedback loops of perception and generation.
+            </p>
+
+            <h3>🎯 Key Concepts</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>Self-Reference</h4>
+                    Systems that can perceive and generate their own patterns
+                </div>
+                <div class="feature-item">
+                    <h4>Emergent Stability</h4>
+                    Order arising from dynamical processes through conservation laws
+                </div>
+                <div class="feature-item">
+                    <h4>Harmonic Operators</h4>
+                    Pattern transformations based on wave-like mathematical operations
+                </div>
+                <div class="feature-item">
+                    <h4>Cellular Memory</h4>
+                    Spatial representations that maintain identity through time
+                </div>
+            </div>
+
+            <h3>🔗 Related Systems</h3>
+            <ul style="color: #ccc;">
+                <li><strong>FEG (Field Equation Graphics)</strong> - SVG extension with harmonic operators</li>
+                <li><strong>CE1 Witness</strong> - Self-reflective computational structures</li>
+                <li><strong>Animated Strings</strong> - Oscillatory field representations</li>
+                <li><strong>Spatiotemporal Memory</strong> - Persistent agent tracking across frames</li>
+            </ul>
+
+            <h3>🚀 Future Directions</h3>
+            <p>
+                Integration with machine learning, real-time video processing, multi-scale pattern hierarchies,
+                and cross-modal pattern recognition (visual, auditory, temporal).
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let system;
+        let animationId;
+        let kernelSystem;
+        let activeKernels = new Map();
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            // Initialize systems as needed
+            if (tabName === 'sobel' && !system) {
+                initializeSobelSystem();
+            } else if (tabName === 'kernel' && !kernelSystem) {
+                initializeKernelSystem();
+            }
+        }
+
+        // Self-Referential Sobel System Implementation
+        class SelfReferentialSobelSystem {
+            constructor(canvas, svg) {
+                this.canvas = canvas;
+                this.svg = svg;
+                this.ctx = canvas.getContext('2d');
+
+                // System parameters
+                this.gridSize = 64;
+                this.cellSize = canvas.width / this.gridSize;
+                this.running = false;
+                this.frameCount = 0;
+
+                // Sobel detector
+                this.sobelSensitivity = 50;
+
+                // Phase system (Feigenbaum-style)
+                this.bifurcationParameter = 3.5;
+
+                // Objects
+                this.objects = new Map();
+                this.objectIdCounter = 0;
+                this.stabilityThreshold = 0.3;
+
+                // Ballast System
+                this.ballastSystem = {
+                    totalStabilityMass: 0,
+                    stabilityBudget: this.gridSize * this.gridSize * 0.1,
+                    ballastFields: new Map(),
+                    conservationFactor: 0.95,
+                    redistributionRate: 0.1,
+                    ballastTiers: {
+                        tier1: { threshold: 0.3, massMultiplier: 1.0, decayRate: 0.02 },
+                        tier2: { threshold: 0.6, massMultiplier: 2.0, decayRate: 0.01 },
+                        tier3: { threshold: 0.8, massMultiplier: 3.0, decayRate: 0.005 }
+                    },
+                    globalAttraction: 0.05,
+                    memoryBallast: [],
+                    ballastResonance: 0.0
+                };
+
+                // Rendering
+                this.renderMode = 'wireframe';
+
+                // Initialize grid
+                this.grid = this.createGrid();
+                this.initializeGrid();
+            }
+
+            createGrid() {
+                const grid = [];
+                for (let y = 0; y < this.gridSize; y++) {
+                    const row = [];
+                    for (let x = 0; x < this.gridSize; x++) {
+                        row.push({
+                            x, y,
+                            value: 0,
+                            phase: 'fixed',
+                            stability: 0,
+                            age: 0,
+                            sobelGradient: { magnitude: 0, direction: 0 },
+                            wireframeSignature: null,
+                            objectId: null
+                        });
+                    }
+                    grid.push(row);
+                }
+                return grid;
+            }
+
+            initializeGrid() {
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        cell.value = Math.random() * 0.1;
+                        cell.phase = this.randomPhase();
+                        cell.stability = Math.random() * 0.2;
+                    }
+                }
+                this.seedInitialObjects();
+            }
+
+            randomPhase() {
+                const phases = ['fixed', 'osc28', 'osc37'];
+                return phases[Math.floor(Math.random() * phases.length)];
+            }
+
+            seedInitialObjects() {
+                const centers = [
+                    {x: 16, y: 16, radius: 8},
+                    {x: 48, y: 16, radius: 6},
+                    {x: 32, y: 48, radius: 10}
+                ];
+
+                for (const center of centers) {
+                    this.createObject(center.x, center.y, center.radius);
+                }
+            }
+
+            createObject(centerX, centerY, radius) {
+                const objectId = ++this.objectIdCounter;
+                const object = {
+                    id: objectId,
+                    centerX, centerY,
+                    radius,
+                    stability: 0.8,
+                    age: 0,
+                    phase: this.randomPhase(),
+                    cells: [],
+                    wireframeSignature: this.generateWireframeSignature(radius),
+                    sobelSignature: this.generateSobelSignature(radius),
+                    stabilityMass: 0,
+                    ballastTier: 1,
+                    ballastField: null,
+                    conservedEnergy: 0,
+                    memoryFootprint: null
+                };
+
+                // Assign cells to object
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const x = centerX + dx;
+                        const y = centerY + dy;
+
+                        if (x >= 0 && x < this.gridSize && y >= 0 && y < this.gridSize) {
+                            const distance = Math.sqrt(dx*dx + dy*dy);
+                            if (distance <= radius) {
+                                const cell = this.grid[y][x];
+                                cell.objectId = objectId;
+                                cell.value = 1;
+                                cell.phase = object.phase;
+                                cell.stability = object.stability;
+                                object.cells.push(cell);
+                            }
+                        }
+                    }
+                }
+
+                this.objects.set(objectId, object);
+                return object;
+            }
+
+            generateWireframeSignature(radius) {
+                const points = [];
+                const segments = Math.max(8, Math.floor(radius * 2));
+
+                for (let i = 0; i < segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = radius * (0.8 + Math.sin(angle * 3) * 0.2);
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    points.push({x, y});
+                }
+
+                let path = `M${points[0].x} ${points[0].y}`;
+                for (let i = 1; i < points.length; i++) {
+                    path += ` L${points[i].x} ${points[i].y}`;
+                }
+                path += ' Z';
+
+                return path;
+            }
+
+            generateSobelSignature(radius) {
+                const signature = [];
+                const steps = Math.floor(radius * 4);
+
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    const gradient = Math.sin(angle * 2) * 0.5 + 0.5;
+                    signature.push({
+                        angle,
+                        magnitude: gradient,
+                        direction: angle + Math.PI/2
+                    });
+                }
+
+                return signature;
+            }
+
+            update() {
+                if (!this.running) return;
+
+                this.frameCount++;
+
+                this.computeSobelGradients();
+
+                // Update each object
+                for (const [id, object] of this.objects) {
+                    this.updateObject(object);
+                }
+
+                this.applyPhaseDynamics();
+                this.updateBallastSystem();
+                this.updateObjectStability();
+                this.attemptObjectRebirth();
+
+                this.render();
+            }
+
+            computeSobelGradients() {
+                for (let y = 1; y < this.gridSize - 1; y++) {
+                    for (let x = 1; x < this.gridSize - 1; x++) {
+                        const cell = this.grid[y][x];
+
+                        const gx = -this.grid[y-1][x-1].value + this.grid[y-1][x+1].value +
+                                  -2 * this.grid[y][x-1].value + 2 * this.grid[y][x+1].value +
+                                  -this.grid[y+1][x-1].value + this.grid[y+1][x+1].value;
+
+                        const gy = -this.grid[y-1][x-1].value - 2 * this.grid[y-1][x].value - this.grid[y-1][x+1].value +
+                                   this.grid[y+1][x-1].value + 2 * this.grid[y+1][x].value + this.grid[y+1][x+1].value;
+
+                        const magnitude = Math.sqrt(gx*gx + gy*gy);
+                        const direction = Math.atan2(gy, gx);
+
+                        cell.sobelGradient = {
+                            magnitude: Math.min(1, magnitude / this.sobelSensitivity),
+                            direction: direction
+                        };
+                    }
+                }
+            }
+
+            updateObject(object) {
+                object.age++;
+
+                let boundaryStrength = 0;
+                let cellCount = 0;
+
+                for (const cell of object.cells) {
+                    if (cell.objectId === object.id) {
+                        boundaryStrength += cell.sobelGradient.magnitude;
+                        cellCount++;
+                    }
+                }
+
+                if (cellCount > 0) {
+                    const newStability = boundaryStrength / cellCount;
+                    object.stability = object.stability * 0.9 + newStability * 0.1;
+                }
+
+                this.applyBallastInfluence(object);
+                this.updateObjectPhase(object);
+                this.updateObjectBallast(object);
+
+                for (const cell of object.cells) {
+                    if (cell.objectId === object.id) {
+                        const ballastBoost = object.stabilityMass * 0.1;
+                        cell.value = Math.max(0, Math.min(1,
+                            (object.stability + ballastBoost) * (0.5 + 0.5 * Math.sin(this.frameCount * 0.1 * (object.phase === 'osc28' ? 28 : object.phase === 'osc37' ? 37 : 1)))
+                        ));
+                        cell.stability = object.stability;
+                        cell.age = object.age;
+                    }
+                }
+            }
+
+            applyBallastInfluence(object) {
+                const resonanceBoost = this.ballastSystem.ballastResonance * 0.1;
+                object.stability += resonanceBoost;
+
+                if (object.ballastField) {
+                    const fieldStrength = object.ballastField.strength;
+                    object.stability += fieldStrength * 0.05;
+                }
+
+                const memoryInfluence = this.getMemoryBallastInfluence(object);
+                object.stability += memoryInfluence * 0.03;
+            }
+
+            updateObjectPhase(object) {
+                if (object.phase === 'fixed') {
+                    object.stability *= 0.99;
+                } else {
+                    const period = object.phase === 'osc28' ? 28 : 37;
+                    const phase = (this.frameCount / period) * Math.PI * 2;
+
+                    const r = this.bifurcationParameter;
+                    const x = object.stability;
+                    const newX = r * x * (1 - x);
+
+                    object.stability = Math.max(0, Math.min(1, newX));
+                    object.stability += 0.1 * Math.sin(phase);
+                }
+            }
+
+            updateObjectBallast(object) {
+                const massGain = object.stability * object.age * 0.001;
+                object.stabilityMass += massGain;
+                object.stabilityMass *= this.ballastSystem.conservationFactor;
+
+                this.updateBallastTier(object);
+                this.updateBallastField(object);
+
+                this.ballastSystem.totalStabilityMass += massGain;
+
+                if (object.stability > 0.7 && object.age > 50) {
+                    this.createMemoryFootprint(object);
+                }
+            }
+
+            updateBallastTier(object) {
+                const tiers = this.ballastSystem.ballastTiers;
+                const combinedMetric = (object.stability + object.stabilityMass * 0.1) / 2;
+
+                if (combinedMetric >= tiers.tier3.threshold) {
+                    object.ballastTier = 3;
+                } else if (combinedMetric >= tiers.tier2.threshold) {
+                    object.ballastTier = 2;
+                } else {
+                    object.ballastTier = 1;
+                }
+
+                const tier = tiers[`tier${object.ballastTier}`];
+                object.stabilityMass *= (1 - tier.decayRate);
+            }
+
+            updateBallastField(object) {
+                if (object.stability > 0.5) {
+                    const tier = this.ballastSystem.ballastTiers[`tier${object.ballastTier}`];
+                    const fieldStrength = object.stability * tier.massMultiplier * 0.1;
+
+                    object.ballastField = {
+                        centerX: object.centerX,
+                        centerY: object.centerY,
+                        radius: object.radius * 2,
+                        strength: fieldStrength,
+                        tier: object.ballastTier
+                    };
+
+                    this.ballastSystem.ballastFields.set(object.id, object.ballastField);
+                } else {
+                    if (object.ballastField) {
+                        this.ballastSystem.ballastFields.delete(object.id);
+                        object.ballastField = null;
+                    }
+                }
+            }
+
+            getMemoryBallastInfluence(object) {
+                let influence = 0;
+
+                for (const memory of this.ballastSystem.memoryBallast) {
+                    const distance = Math.sqrt(
+                        Math.pow(object.centerX - memory.centerX, 2) +
+                        Math.pow(object.centerY - memory.centerY, 2)
+                    );
+
+                    const spatialInfluence = Math.max(0, 1 - distance / 20);
+                    const temporalInfluence = Math.max(0, 1 - (this.frameCount - memory.timestamp) / 500);
+                    const phaseMatch = object.phase === memory.phase ? 1.5 : 1.0;
+
+                    influence += spatialInfluence * temporalInfluence * phaseMatch * 0.05;
+                }
+
+                return Math.min(0.2, influence);
+            }
+
+            applyPhaseDynamics() {
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        let couplingSum = 0;
+                        let couplingCount = 0;
+
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+
+                                const nx = x + dx;
+                                const ny = y + dy;
+
+                                if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                    const neighbor = this.grid[ny][nx];
+                                    if (neighbor.phase === cell.phase) {
+                                        couplingSum += neighbor.stability;
+                                        couplingCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (couplingCount > 0) {
+                            const couplingStrength = couplingSum / couplingCount;
+                            cell.stability = cell.stability * 0.95 + couplingStrength * 0.05;
+                        }
+                    }
+                }
+            }
+
+            updateBallastSystem() {
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    if (field.residual) {
+                        field.strength *= field.decay;
+                        field.lifetime--;
+
+                        if (field.lifetime <= 0 || field.strength < 0.01) {
+                            this.ballastSystem.ballastFields.delete(id);
+                        }
+                    }
+                }
+
+                this.enforceStabilityBudget();
+                this.updateBallastResonance();
+            }
+
+            enforceStabilityBudget() {
+                const currentMass = this.ballastSystem.totalStabilityMass;
+                const budget = this.ballastSystem.stabilityBudget;
+
+                if (currentMass > budget * 1.2) {
+                    const excessRatio = currentMass / budget;
+                    for (const [id, object] of this.objects) {
+                        object.stabilityMass *= (0.98 - (excessRatio - 1) * 0.1);
+                    }
+                } else if (currentMass < budget * 0.5) {
+                    for (const [id, object] of this.objects) {
+                        if (object.stability > 0.6) {
+                            object.stabilityMass *= 1.02;
+                        }
+                    }
+                }
+            }
+
+            updateBallastResonance() {
+                let totalFieldStrength = 0;
+                let fieldCount = 0;
+
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    totalFieldStrength += field.strength;
+                    fieldCount++;
+                }
+
+                if (fieldCount > 0) {
+                    this.ballastSystem.ballastResonance = Math.min(1, totalFieldStrength / fieldCount);
+                } else {
+                    this.ballastSystem.ballastResonance *= 0.99;
+                }
+            }
+
+            updateObjectStability() {
+                const objectsToRemove = [];
+
+                for (const [id, object] of this.objects) {
+                    const effectiveThreshold = this.stabilityThreshold - (object.stabilityMass * 0.1);
+
+                    if (object.stability < effectiveThreshold) {
+                        objectsToRemove.push(id);
+                    }
+                }
+
+                for (const id of objectsToRemove) {
+                    const object = this.objects.get(id);
+                    this.redistributeBallast(object);
+                    this.removeObject(id);
+                }
+            }
+
+            removeObject(objectId) {
+                const object = this.objects.get(objectId);
+                if (!object) return;
+
+                for (const cell of object.cells) {
+                    if (cell.objectId === objectId) {
+                        cell.objectId = null;
+                        cell.value = 0;
+                        cell.stability = 0;
+                    }
+                }
+
+                if (object.ballastField) {
+                    this.ballastSystem.ballastFields.delete(objectId);
+                }
+
+                this.ballastSystem.totalStabilityMass -= object.stabilityMass;
+                this.objects.delete(objectId);
+            }
+
+            redistributeBallast(deadObject) {
+                if (deadObject.stabilityMass <= 0) return;
+
+                const redistributionAmount = deadObject.stabilityMass * this.ballastSystem.redistributionRate;
+                const nearbyObjects = this.findNearbyObjects(deadObject.centerX, deadObject.centerY, deadObject.radius * 3);
+
+                if (nearbyObjects.length > 0) {
+                    const sharePerObject = redistributionAmount / nearbyObjects.length;
+                    for (const nearbyObj of nearbyObjects) {
+                        nearbyObj.stabilityMass += sharePerObject;
+                        nearbyObj.conservedEnergy += sharePerObject * 0.5;
+                    }
+                } else {
+                    this.createResidualBallastField(deadObject.centerX, deadObject.centerY, redistributionAmount);
+                }
+
+                this.updateBallastResonance();
+            }
+
+            findNearbyObjects(centerX, centerY, radius) {
+                const nearby = [];
+
+                for (const [id, object] of this.objects) {
+                    const distance = Math.sqrt(
+                        Math.pow(object.centerX - centerX, 2) +
+                        Math.pow(object.centerY - centerY, 2)
+                    );
+
+                    if (distance <= radius) {
+                        nearby.push(object);
+                    }
+                }
+
+                return nearby;
+            }
+
+            createResidualBallastField(x, y, energy) {
+                const fieldId = `residual_${Date.now()}`;
+
+                this.ballastSystem.ballastFields.set(fieldId, {
+                    centerX: x,
+                    centerY: y,
+                    radius: 5,
+                    strength: energy * 0.1,
+                    tier: 1,
+                    residual: true,
+                    decay: 0.95,
+                    lifetime: 100
+                });
+            }
+
+            createMemoryFootprint(object) {
+                object.memoryFootprint = {
+                    centerX: object.centerX,
+                    centerY: object.centerY,
+                    radius: object.radius,
+                    phase: object.phase,
+                    stabilitySignature: object.stability,
+                    ballastTier: object.ballastTier,
+                    timestamp: this.frameCount
+                };
+
+                this.ballastSystem.memoryBallast.push(object.memoryFootprint);
+                if (this.ballastSystem.memoryBallast.length > 20) {
+                    this.ballastSystem.memoryBallast.shift();
+                }
+            }
+
+            attemptObjectRebirth() {
+                const candidates = [];
+
+                for (let y = 2; y < this.gridSize - 2; y++) {
+                    for (let x = 2; x < this.gridSize - 2; x++) {
+                        const cell = this.grid[y][x];
+
+                        if (cell.objectId === null && cell.sobelGradient.magnitude > 0.5) {
+                            let regionGradient = 0;
+                            let regionSize = 0;
+                            let ballastInfluence = 0;
+
+                            for (let dy = -2; dy <= 2; dy++) {
+                                for (let dx = -2; dx <= 2; dx++) {
+                                    const nx = x + dx;
+                                    const ny = y + dy;
+                                    if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                        regionGradient += this.grid[ny][nx].sobelGradient.magnitude;
+                                        regionSize++;
+
+                                        for (const [fieldId, field] of this.ballastSystem.ballastFields) {
+                                            const distance = Math.sqrt(
+                                                Math.pow(nx - field.centerX, 2) +
+                                                Math.pow(ny - field.centerY, 2)
+                                            );
+                                            if (distance <= field.radius) {
+                                                ballastInfluence += field.strength * (1 - distance / field.radius);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            const avgGradient = regionGradient / regionSize;
+                            const totalPotential = avgGradient + ballastInfluence * 0.5;
+
+                            if (totalPotential > 0.3) {
+                                candidates.push({
+                                    x, y,
+                                    gradient: avgGradient,
+                                    ballastBoost: ballastInfluence,
+                                    size: Math.floor(totalPotential * 10) + 3
+                                });
+                            }
+                        }
+                    }
+                }
+
+                candidates.sort((a, b) => (b.gradient + b.ballastBoost) - (a.gradient + a.ballastBoost));
+                const maxNewObjects = Math.max(1, Math.floor(this.gridSize / 16));
+
+                for (let i = 0; i < Math.min(candidates.length, maxNewObjects); i++) {
+                    const candidate = candidates[i];
+                    const newObject = this.createObject(candidate.x, candidate.y, candidate.size);
+
+                    if (candidate.ballastBoost > 0) {
+                        newObject.stabilityMass += candidate.ballastBoost * 0.1;
+                        newObject.conservedEnergy += candidate.ballastBoost * 0.05;
+                    }
+                }
+            }
+
+            render() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.svg.innerHTML = '';
+
+                if (this.renderMode === 'wireframe') {
+                    this.renderWireframe();
+                } else if (this.renderMode === 'filled') {
+                    this.renderFilled();
+                } else if (this.renderMode === 'gradient') {
+                    this.renderGradient();
+                }
+
+                this.renderBallastFields();
+                this.renderObjects();
+                this.updateStats();
+            }
+
+            renderWireframe() {
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const intensity = cell.value;
+
+                        if (intensity > 0.1) {
+                            this.ctx.fillStyle = `hsl(${cell.phase === 'fixed' ? 0 : cell.phase === 'osc28' ? 220 : 0},
+                                                   ${50 + intensity * 50}%,
+                                                   ${20 + intensity * 30}%)`;
+                            this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                        }
+
+                        if (cell.sobelGradient.magnitude > 0.3) {
+                            this.ctx.strokeStyle = '#fff';
+                            this.ctx.lineWidth = 1;
+                            this.ctx.strokeRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                        }
+                    }
+                }
+            }
+
+            renderFilled() {
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const intensity = cell.value;
+
+                        this.ctx.fillStyle = `rgba(${cell.phase === 'fixed' ? '100,100,100' :
+                                                   cell.phase === 'osc28' ? '74,144,226' : '255,107,107'},
+                                                  ${intensity})`;
+                        this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                    }
+                }
+            }
+
+            renderGradient() {
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const hue = cell.phase === 'fixed' ? 0 : cell.phase === 'osc28' ? 220 : 0;
+                        const saturation = 30 + cell.stability * 70;
+                        const lightness = 10 + cell.value * 40;
+
+                        this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                        this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                    }
+                }
+            }
+
+            renderBallastFields() {
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    const cx = field.centerX * this.cellSize;
+                    const cy = field.centerY * this.cellSize;
+                    const radius = field.radius * this.cellSize;
+
+                    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
+                    gradient.setAttribute('id', `ballastField${id}`);
+                    gradient.setAttribute('cx', '50%');
+                    gradient.setAttribute('cy', '50%');
+                    gradient.setAttribute('r', '50%');
+
+                    const stops = [
+                        {offset: '0%', opacity: field.strength * 0.3},
+                        {offset: '70%', opacity: field.strength * 0.1},
+                        {offset: '100%', opacity: '0'}
+                    ];
+
+                    for (let i = 0; i < stops.length; i++) {
+                        const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                        stop.setAttribute('offset', stops[i].offset);
+                        stop.setAttribute('stop-color', field.residual ? '#444' : '#666');
+                        stop.setAttribute('stop-opacity', stops[i].opacity);
+                        gradient.appendChild(stop);
+                    }
+
+                    this.svg.appendChild(gradient);
+
+                    const fieldCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    fieldCircle.setAttribute('cx', cx);
+                    fieldCircle.setAttribute('cy', cy);
+                    fieldCircle.setAttribute('r', radius);
+                    fieldCircle.setAttribute('fill', `url(#ballastField${id})`);
+                    fieldCircle.setAttribute('opacity', field.residual ? '0.3' : '0.5');
+
+                    this.svg.appendChild(fieldCircle);
+                }
+            }
+
+            renderObjects() {
+                if (!this.svg.querySelector('#glow1')) {
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+                    for (let tier = 1; tier <= 3; tier++) {
+                        const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                        filter.setAttribute('id', `glow${tier}`);
+                        const blurAmount = tier * 1.5;
+                        filter.innerHTML = `
+                            <feGaussianBlur stdDeviation="${blurAmount}" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        `;
+                        defs.appendChild(filter);
+                    }
+
+                    this.svg.appendChild(defs);
+                }
+
+                for (const [id, object] of this.objects) {
+                    const cx = object.centerX * this.cellSize;
+                    const cy = object.centerY * this.cellSize;
+                    const scale = (object.radius * this.cellSize) / 50;
+
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', object.wireframeSignature);
+
+                    const hue = object.phase === 'fixed' ? 0 : object.phase === 'osc28' ? 220 : 0;
+                    const saturation = 70 + object.stability * 30;
+                    const lightness = 50 + object.age * 0.1;
+                    const ballastBoost = object.stabilityMass * 10;
+
+                    path.setAttribute('stroke', `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+                    path.setAttribute('stroke-width', `${2 + ballastBoost}`);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('transform', `translate(${cx}, ${cy}) scale(${scale})`);
+
+                    if (object.stability > 0.7 || object.ballastTier > 1) {
+                        path.setAttribute('filter', `url(#glow${object.ballastTier})`);
+                    }
+
+                    this.svg.appendChild(path);
+
+                    if (object.ballastTier > 1) {
+                        const tierCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        tierCircle.setAttribute('cx', cx);
+                        tierCircle.setAttribute('cy', cy);
+                        tierCircle.setAttribute('r', object.radius * this.cellSize * 0.6);
+                        tierCircle.setAttribute('stroke', `hsl(${hue}, 100%, 80%)`);
+                        tierCircle.setAttribute('stroke-width', object.ballastTier);
+                        tierCircle.setAttribute('fill', 'none');
+                        this.svg.appendChild(tierCircle);
+                    }
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', cx);
+                    circle.setAttribute('cy', cy);
+                    circle.setAttribute('r', object.radius * this.cellSize * 0.8);
+                    circle.setAttribute('stroke', `hsl(${hue}, 100%, 70%)`);
+                    circle.setAttribute('stroke-width', '1');
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke-dasharray', '5,5');
+                    circle.setAttribute('opacity', '0.3');
+                    this.svg.appendChild(circle);
+                }
+            }
+
+            updateStats() {
+                document.getElementById('frame-count').textContent = this.frameCount;
+                document.getElementById('object-count').textContent = this.objects.size;
+
+                let totalStability = 0;
+                let phaseCounts = {fixed: 0, osc28: 0, osc37: 0};
+
+                for (const [id, object] of this.objects) {
+                    totalStability += object.stability;
+                    phaseCounts[object.phase]++;
+                }
+
+                const avgStability = this.objects.size > 0 ? totalStability / this.objects.size : 0;
+                document.getElementById('avg-stability').textContent = avgStability.toFixed(2);
+
+                document.getElementById('phase-fixed-count').textContent = phaseCounts.fixed;
+                document.getElementById('phase-osc28-count').textContent = phaseCounts.osc28;
+                document.getElementById('phase-osc37-count').textContent = phaseCounts.osc37;
+
+                const coherence = avgStability * (this.objects.size / Math.max(1, this.gridSize * this.gridSize * 0.01));
+                document.getElementById('witness-coherence').textContent = Math.min(1, coherence).toFixed(2);
+
+                document.getElementById('total-ballast-mass').textContent = this.ballastSystem.totalStabilityMass.toFixed(2);
+                document.getElementById('ballast-resonance').textContent = this.ballastSystem.ballastResonance.toFixed(2);
+                document.getElementById('ballast-field-count').textContent = this.ballastSystem.ballastFields.size;
+                document.getElementById('memory-footprint-count').textContent = this.ballastSystem.memoryBallast.length;
+
+                this.updateObjectDetails();
+            }
+
+            updateObjectDetails() {
+                const container = document.getElementById('object-details');
+                container.innerHTML = '';
+
+                for (const [id, object] of this.objects) {
+                    const div = document.createElement('div');
+                    div.className = 'object-info';
+
+                    const phaseClass = object.phase === 'fixed' ? 'phase-fixed' :
+                                     object.phase === 'osc28' ? 'phase-osc28' : 'phase-osc37';
+
+                    div.innerHTML = `
+                        <div>
+                            <span class="phase-indicator ${phaseClass}"></span>
+                            Object ${id} (${object.phase}) [Tier ${object.ballastTier}]
+                            <span class="stability-bar">
+                                <span class="stability-fill" style="width: ${object.stability * 100}%; background: hsl(${object.phase === 'fixed' ? 0 : object.phase === 'osc28' ? 220 : 0}, 70%, 50%);"></span>
+                            </span>
+                        </div>
+                        <div>Age: ${object.age}, Stability: ${object.stability.toFixed(2)}, Mass: ${object.stabilityMass.toFixed(2)}, Cells: ${object.cells.length}</div>
+                    `;
+
+                    container.appendChild(div);
+                }
+            }
+
+            setGridSize(size) {
+                this.gridSize = size;
+                this.cellSize = this.canvas.width / this.gridSize;
+                this.grid = this.createGrid();
+                this.initializeGrid();
+                this.render();
+            }
+
+            setStabilityThreshold(threshold) {
+                this.stabilityThreshold = threshold;
+            }
+
+            setSobelSensitivity(sensitivity) {
+                this.sobelSensitivity = sensitivity;
+            }
+
+            injectPhase(phase) {
+                const injectionPoints = 5;
+
+                for (let i = 0; i < injectionPoints; i++) {
+                    const x = Math.floor(Math.random() * this.gridSize);
+                    const y = Math.floor(Math.random() * this.gridSize);
+
+                    for (let dy = -3; dy <= 3; dy++) {
+                        for (let dx = -3; dx <= 3; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+
+                            if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                const cell = this.grid[ny][nx];
+                                const distance = Math.sqrt(dx*dx + dy*dy);
+                                const influence = Math.max(0, 1 - distance / 3);
+
+                                if (Math.random() < influence) {
+                                    cell.phase = phase;
+                                    cell.stability = Math.max(cell.stability, 0.5);
+
+                                    if (cell.objectId) {
+                                        const object = this.objects.get(cell.objectId);
+                                        if (object) {
+                                            object.stabilityMass += influence * 0.1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // SVG Kernel System Implementation
+        class SVGKernelSystem {
+            constructor() {
+                this.kernels = new Map();
+                this.lattices = new Map();
+            }
+
+            parseKernel(svgText) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svgText, 'text/xml');
+
+                const kernelElements = doc.querySelectorAll('kernel');
+                const kernels = [];
+
+                for (const kernelEl of kernelElements) {
+                    const kernel = this.parseKernelElement(kernelEl);
+                    this.kernels.set(kernel.id, kernel);
+                    kernels.push(kernel);
+                }
+
+                return kernels;
+            }
+
+            parseKernelElement(element) {
+                const id = element.getAttribute('id');
+                const energy = parseFloat(element.getAttribute('energy') || 1.0);
+
+                const kernel = {
+                    id: id,
+                    energy: energy,
+                    shape: null,
+                    discrete: null,
+                    invariants: [],
+                    power: parseFloat(element.getAttribute('power') || 2.0)
+                };
+
+                const shapeEl = element.querySelector('shape');
+                if (shapeEl) {
+                    kernel.shape = this.parseShapeElement(shapeEl);
+                }
+
+                const discreteEl = element.querySelector('discrete');
+                if (discreteEl) {
+                    kernel.discrete = this.parseDiscreteElement(discreteEl);
+                }
+
+                const invariantEls = element.querySelectorAll('invariants > *');
+                for (const invEl of invariantEls) {
+                    kernel.invariants.push(this.parseInvariantElement(invEl));
+                }
+
+                return kernel;
+            }
+
+            parseShapeElement(element) {
+                const shape = {
+                    type: 'svg',
+                    paths: [],
+                    transforms: [],
+                    attributes: {}
+                };
+
+                const paths = element.querySelectorAll('path');
+                for (const pathEl of paths) {
+                    shape.paths.push({
+                        d: pathEl.getAttribute('d'),
+                        stroke: pathEl.getAttribute('stroke'),
+                        strokeWidth: parseFloat(pathEl.getAttribute('stroke-width') || '2'),
+                        fill: pathEl.getAttribute('fill'),
+                        transform: pathEl.getAttribute('transform')
+                    });
+                }
+
+                return shape;
+            }
+
+            parseDiscreteElement(element) {
+                return {
+                    lattice: {
+                        size: parseInt(element.querySelector('lattice')?.getAttribute('size') || 256),
+                        boundary: element.querySelector('lattice')?.getAttribute('boundary') || 'wrap',
+                        dimensions: parseInt(element.querySelector('lattice')?.getAttribute('dimensions') || '2')
+                    }
+                };
+            }
+
+            parseInvariantElement(element) {
+                const type = element.tagName;
+                const invariant = {
+                    type: type,
+                    enabled: true,
+                    params: {}
+                };
+
+                for (const attr of element.attributes) {
+                    if (attr.name === 'enabled') {
+                        invariant.enabled = attr.value === 'true';
+                    } else {
+                        invariant.params[attr.name] = attr.value;
+                    }
+                }
+
+                return invariant;
+            }
+
+            discretizeKernel(kernel) {
+                const latticeSize = kernel.discrete.lattice.size;
+                const lattice = new Float32Array(latticeSize * latticeSize);
+
+                for (const path of kernel.shape.paths) {
+                    this.rasterizePathToLattice(path, lattice, latticeSize);
+                }
+
+                this.applyInvariants(lattice, kernel.invariants, latticeSize);
+                kernel.lattice = lattice;
+                this.lattices.set(kernel.id, lattice);
+
+                return lattice;
+            }
+
+            rasterizePathToLattice(path, lattice, size) {
+                const commands = this.parseSVGPath(path.d);
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = size * 4;
+                const ctx = canvas.getContext('2d');
+
+                ctx.strokeStyle = path.stroke || '#000000';
+                ctx.lineWidth = (path.strokeWidth || 2) * 4;
+                ctx.fillStyle = path.fill || 'transparent';
+
+                ctx.beginPath();
+                this.renderPathCommands(ctx, commands, 4);
+                ctx.stroke();
+                if (path.fill && path.fill !== 'none') {
+                    ctx.fill();
+                }
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                this.downsampleToLattice(imageData, lattice, size, 4);
+            }
+
+            parseSVGPath(d) {
+                const commands = [];
+                const tokens = d.match(/[a-zA-Z][^a-zA-Z]*/g) || [];
+
+                for (const token of tokens) {
+                    const cmd = token[0];
+                    const params = token.slice(1).trim().split(/[\s,]+/).map(parseFloat);
+                    commands.push({cmd: cmd.toUpperCase(), params});
+                }
+
+                return commands;
+            }
+
+            renderPathCommands(ctx, commands, scale = 1) {
+                let currentX = 0, currentY = 0;
+                let startX = 0, startY = 0;
+
+                for (const command of commands) {
+                    const {cmd, params} = command;
+
+                    switch (cmd) {
+                        case 'M':
+                            currentX = params[0] * scale;
+                            currentY = params[1] * scale;
+                            startX = currentX;
+                            startY = currentY;
+                            ctx.moveTo(currentX, currentY);
+                            break;
+                        case 'L':
+                            currentX = params[0] * scale;
+                            currentY = params[1] * scale;
+                            ctx.lineTo(currentX, currentY);
+                            break;
+                        case 'C':
+                            ctx.bezierCurveTo(
+                                params[0] * scale, params[1] * scale,
+                                params[2] * scale, params[3] * scale,
+                                params[4] * scale, params[5] * scale
+                            );
+                            currentX = params[4] * scale;
+                            currentY = params[5] * scale;
+                            break;
+                        case 'Q':
+                            ctx.quadraticCurveTo(
+                                params[0] * scale, params[1] * scale,
+                                params[2] * scale, params[3] * scale
+                            );
+                            currentX = params[2] * scale;
+                            currentY = params[3] * scale;
+                            break;
+                        case 'A':
+                            currentX = params[5] * scale;
+                            currentY = params[6] * scale;
+                            ctx.lineTo(currentX, currentY);
+                            break;
+                        case 'Z':
+                            ctx.closePath();
+                            break;
+                    }
+                }
+            }
+
+            downsampleToLattice(imageData, lattice, size, supersample) {
+                const data = imageData.data;
+                const blockSize = supersample;
+
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        let sum = 0;
+                        let count = 0;
+
+                        for (let sy = 0; sy < blockSize; sy++) {
+                            for (let sx = 0; sx < blockSize; sx++) {
+                                const px = x * blockSize + sx;
+                                const py = y * blockSize + sy;
+                                const idx = (py * imageData.width + px) * 4;
+
+                                if (px < imageData.width && py < imageData.height) {
+                                    const r = data[idx] / 255;
+                                    const g = data[idx + 1] / 255;
+                                    const b = data[idx + 2] / 255;
+                                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                                    sum += lum;
+                                    count++;
+                                }
+                            }
+                        }
+
+                        const avgPresence = count > 0 ? sum / count : 0;
+                        lattice[y * size + x] = Math.max(lattice[y * size + x], avgPresence);
+                    }
+                }
+            }
+
+            applyInvariants(lattice, invariants, size) {
+                for (const invariant of invariants) {
+                    if (!invariant.enabled) continue;
+
+                    switch (invariant.type) {
+                        case 'scale-invariance':
+                            this.applyScaleInvariance(lattice, size);
+                            break;
+                        case 'mirror-symmetry':
+                            this.applyMirrorSymmetry(lattice, size);
+                            break;
+                        case 'rotation-invariance':
+                            this.applyRotationInvariance(lattice, size);
+                            break;
+                    }
+                }
+            }
+
+            applyScaleInvariance(lattice, size) {
+                const scales = [0.5, 0.707, 1.0, 1.414, 2.0];
+
+                for (const scale of scales) {
+                    const scaledLattice = this.scaleLattice(lattice, size, scale);
+                    for (let i = 0; i < lattice.length; i++) {
+                        lattice[i] = Math.max(lattice[i], scaledLattice[i]);
+                    }
+                }
+            }
+
+            scaleLattice(lattice, size, scale) {
+                const newSize = Math.floor(size * scale);
+                const scaled = new Float32Array(newSize * newSize);
+
+                for (let y = 0; y < newSize; y++) {
+                    for (let x = 0; x < newSize; x++) {
+                        const srcX = Math.floor(x / scale);
+                        const srcY = Math.floor(y / scale);
+
+                        if (srcX < size && srcY < size) {
+                            scaled[y * newSize + x] = lattice[srcY * size + srcX];
+                        }
+                    }
+                }
+
+                return scaled;
+            }
+
+            applyMirrorSymmetry(lattice, size) {
+                const mirrored = new Float32Array(lattice);
+
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const mx = size - 1 - x;
+                        const my = size - 1 - y;
+
+                        mirrored[y * size + x] = Math.max(mirrored[y * size + x], lattice[y * size + mx]);
+                        mirrored[y * size + x] = Math.max(mirrored[y * size + x], lattice[my * size + x]);
+                    }
+                }
+
+                mirrored.forEach((val, i) => lattice[i] = val);
+            }
+
+            applyRotationInvariance(lattice, size) {
+                const rotations = [90, 180, 270];
+
+                for (const angle of rotations) {
+                    const rotated = this.rotateLattice(lattice, size, angle);
+                    for (let i = 0; i < lattice.length; i++) {
+                        lattice[i] = Math.max(lattice[i], rotated[i]);
+                    }
+                }
+            }
+
+            rotateLattice(lattice, size, angle) {
+                const rotated = new Float32Array(size * size);
+                const radians = (angle * Math.PI) / 180;
+                const cos = Math.cos(radians);
+                const sin = Math.sin(radians);
+                const center = size / 2;
+
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const dx = x - center;
+                        const dy = y - center;
+                        const rx = dx * cos - dy * sin + center;
+                        const ry = dx * sin + dy * cos + center;
+
+                        const rxInt = Math.round(rx);
+                        const ryInt = Math.round(ry);
+
+                        if (rxInt >= 0 && rxInt < size && ryInt >= 0 && ryInt < size) {
+                            rotated[y * size + x] = lattice[ryInt * size + rxInt];
+                        }
+                    }
+                }
+
+                return rotated;
+            }
+
+            evolveLattice(kernelId, inputLattice = null) {
+                const kernel = this.kernels.get(kernelId);
+                if (!kernel) return null;
+
+                const size = kernel.discrete.lattice.size;
+                const currentLattice = inputLattice || kernel.lattice;
+                const newLattice = new Float32Array(size * size);
+
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const idx = y * size + x;
+
+                        const match = this.computeKernelMatch(kernel, currentLattice, x, y, size);
+                        const coupling = this.computeCouplingSum(currentLattice, x, y, size);
+
+                        const energy = kernel.energy;
+                        const power = kernel.power;
+                        const evolved = energy * Math.pow(match + coupling, power);
+
+                        newLattice[idx] = Math.max(0, Math.min(1, evolved));
+                    }
+                }
+
+                kernel.lattice = newLattice;
+                this.lattices.set(kernelId, newLattice);
+
+                return newLattice;
+            }
+
+            computeKernelMatch(kernel, lattice, x, y, size) {
+                const kernelLattice = kernel.lattice;
+                let match = 0;
+                let weight = 0;
+
+                const kernelSize = Math.min(size, 32);
+                const halfKernel = kernelSize / 2;
+
+                for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+                    for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+                        const lx = x + kx;
+                        const ly = y + ky;
+
+                        if (lx >= 0 && lx < size && ly >= 0 && ly < size) {
+                            const lidx = ly * size + lx;
+                            const kidx = (ky + halfKernel) * kernelSize + (kx + halfKernel);
+
+                            if (kidx < kernelLattice.length) {
+                                const similarity = 1 - Math.abs(lattice[lidx] - kernelLattice[kidx]);
+                                match += similarity * kernelLattice[kidx];
+                                weight += kernelLattice[kidx];
+                            }
+                        }
+                    }
+                }
+
+                return weight > 0 ? match / weight : 0;
+            }
+
+            computeCouplingSum(lattice, x, y, size) {
+                let coupling = 0;
+                const radius = 3;
+
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+
+                        const nx = x + dx;
+                        const ny = y + dy;
+
+                        if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+                            const distance = Math.sqrt(dx*dx + dy*dy);
+                            const weight = 1 / (1 + distance);
+                            coupling += lattice[ny * size + nx] * weight;
+                        }
+                    }
+                }
+
+                return coupling * 0.1;
+            }
+
+            latticeToSVG(kernelId) {
+                const kernel = this.kernels.get(kernelId);
+                if (!kernel || !kernel.lattice) return null;
+
+                const size = kernel.discrete.lattice.size;
+                const lattice = kernel.lattice;
+
+                let svg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
+
+                const threshold = 0.5;
+                const paths = this.extractPathsFromLattice(lattice, size, threshold);
+
+                for (const path of paths) {
+                    svg += `<path d="${path.d}" fill="rgba(100,150,255,0.7)" stroke="blue" stroke-width="1"/>`;
+                }
+
+                svg += '</svg>';
+                return svg;
+            }
+
+            extractPathsFromLattice(lattice, size, threshold) {
+                const paths = [];
+                const visited = new Set();
+
+                for (let y = 0; y < size - 1; y++) {
+                    for (let x = 0; x < size - 1; x++) {
+                        const idx = y * size + x;
+                        if (visited.has(idx)) continue;
+
+                        if (lattice[idx] >= threshold) {
+                            const path = this.traceContour(lattice, size, x, y, threshold, visited);
+                            if (path.length > 0) {
+                                paths.push({d: this.contourToSVGPath(path)});
+                            }
+                        }
+                    }
+                }
+
+                return paths;
+            }
+
+            traceContour(lattice, size, startX, startY, threshold, visited) {
+                const contour = [];
+                let x = startX;
+                let y = startY;
+                let dir = 0;
+
+                do {
+                    const idx = y * size + x;
+                    visited.add(idx);
+                    contour.push({x, y});
+
+                    const right = (x + 1 < size) ? lattice[y * size + (x + 1)] >= threshold : false;
+                    const down = (y + 1 < size) ? lattice[(y + 1) * size + x] >= threshold : false;
+                    const left = (x - 1 >= 0) ? lattice[y * size + (x - 1)] >= threshold : false;
+                    const up = (y - 1 >= 0) ? lattice[(y - 1) * size + x] >= threshold : false;
+
+                    if (dir === 0 && right) { x++; }
+                    else if (dir === 1 && down) { y++; }
+                    else if (dir === 2 && left) { x--; }
+                    else if (dir === 3 && up) { y--; }
+                    else {
+                        dir = (dir + 1) % 4;
+                    }
+
+                    if (contour.length > size * 4) break;
+
+                } while (x !== startX || y !== startY || contour.length === 1);
+
+                return contour;
+            }
+
+            contourToSVGPath(contour) {
+                if (contour.length === 0) return '';
+
+                let path = `M${contour[0].x} ${contour[0].y}`;
+                for (let i = 1; i < contour.length; i++) {
+                    path += ` L${contour[i].x} ${contour[i].y}`;
+                }
+                path += ' Z';
+                return path;
+            }
+        }
+
+        // Global control functions
+        function initializeSobelSystem() {
+            const canvas = document.getElementById('grid-canvas');
+            const svg = document.getElementById('grid-svg');
+            system = new SelfReferentialSobelSystem(canvas, svg);
+        }
+
+        function initializeKernelSystem() {
+            kernelSystem = new SVGKernelSystem();
+        }
+
+        function toggleRunning() {
+            if (system.running) {
+                system.running = false;
+                stopAnimation();
+                document.getElementById('run-btn').textContent = '▶️ Start';
+            } else {
+                system.running = true;
+                startAnimation();
+                document.getElementById('run-btn').textContent = '⏸️ Pause';
+            }
+        }
+
+        function resetSystem() {
+            if (system) {
+                system.running = false;
+                stopAnimation();
+                initializeSobelSystem();
+                document.getElementById('run-btn').textContent = '▶️ Start';
+            }
+        }
+
+        function seedObjects() {
+            if (system) {
+                system.seedInitialObjects();
+                system.render();
+            }
+        }
+
+        function injectPhase(phase) {
+            if (system) {
+                system.injectPhase(phase);
+            }
+        }
+
+        function injectBallastMass(amount) {
+            if (system) {
+                const injectionPoints = Math.floor(amount / 2) + 1;
+
+                for (let i = 0; i < injectionPoints; i++) {
+                    const x = Math.floor(Math.random() * system.gridSize);
+                    const y = Math.floor(Math.random() * system.gridSize);
+
+                    system.createResidualBallastField(x, y, amount / injectionPoints);
+
+                    for (const [id, object] of system.objects) {
+                        const distance = Math.sqrt(
+                            Math.pow(object.centerX - x, 2) +
+                            Math.pow(object.centerY - y, 2)
+                        );
+
+                        if (distance < 5) {
+                            object.stabilityMass += amount * 0.1 * (1 - distance / 5);
+                            object.conservedEnergy += amount * 0.05 * (1 - distance / 5);
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateGridSize() {
+            const size = parseInt(document.getElementById('grid-size').value);
+            if (system) {
+                system.setGridSize(size);
+            }
+        }
+
+        function updateStabilityThreshold() {
+            const threshold = parseFloat(document.getElementById('stability-threshold').value);
+            if (system) {
+                system.setStabilityThreshold(threshold);
+            }
+        }
+
+        function updateSobelSensitivity() {
+            const sensitivity = parseInt(document.getElementById('sobel-sensitivity').value);
+            if (system) {
+                system.setSobelSensitivity(sensitivity);
+            }
+        }
+
+        function updateConservationFactor() {
+            const factor = parseFloat(document.getElementById('conservation-factor').value);
+            if (system) {
+                system.ballastSystem.conservationFactor = factor;
+            }
+        }
+
+        function updateBallastAttraction() {
+            const attraction = parseFloat(document.getElementById('ballast-attraction').value);
+            if (system) {
+                system.ballastSystem.globalAttraction = attraction;
+            }
+        }
+
+        function setRenderMode(mode) {
+            if (system) {
+                system.renderMode = mode;
+                system.render();
+
+                document.getElementById('wireframe-btn').classList.toggle('active', mode === 'wireframe');
+                document.getElementById('filled-btn').classList.toggle('active', mode === 'filled');
+                document.getElementById('gradient-btn').classList.toggle('active', mode === 'gradient');
+            }
+        }
+
+        // Kernel system functions
+        function createSpiralKernel() {
+            const kernelXML = `<kernel id="spiral" energy="1.2" power="2.0">
+                <shape>
+                    <path d="M128 128 L128 108 A20 20 0 0 1 148 128 L168 128 A40 40 0 0 0 128 168 L128 188 A60 60 0 0 1 68 128 L48 128 A80 80 0 0 0 128 48 Z"
+                          stroke="#00ff88" stroke-width="3" fill="none"/>
+                </shape>
+                <discrete><lattice size="256" boundary="wrap"/></discrete>
+                <invariants><scale-invariance enabled="true"/><mirror-symmetry enabled="true"/></invariants>
+            </kernel>`;
+
+            const kernels = kernelSystem.parseKernel(kernelXML);
+            for (const kernel of kernels) {
+                kernelSystem.discretizeKernel(kernel);
+                activeKernels.set(kernel.id, kernel);
+                renderKernelLattice('spiral-kernel', kernel);
+            }
+            updateKernelStats();
+        }
+
+        function createWaveKernel() {
+            const kernelXML = `<kernel id="wave" energy="1.0" power="1.8">
+                <shape>
+                    <path d="M0 128 Q64 64 128 128 T256 128 L256 140 L0 140 Z"
+                          stroke="#0088ff" stroke-width="4" fill="#004488"/>
+                </shape>
+                <discrete><lattice size="256" boundary="wrap"/></discrete>
+                <invariants><scale-invariance enabled="true"/></invariants>
+            </kernel>`;
+
+            const kernels = kernelSystem.parseKernel(kernelXML);
+            for (const kernel of kernels) {
+                kernelSystem.discretizeKernel(kernel);
+                activeKernels.set(kernel.id, kernel);
+                renderKernelLattice('wave-kernel', kernel);
+            }
+            updateKernelStats();
+        }
+
+        function createCircleKernel() {
+            const kernelXML = `<kernel id="circle" energy="1.5" power="2.2">
+                <shape>
+                    <circle cx="128" cy="128" r="60" stroke="#ff8800" stroke-width="4" fill="none"/>
+                </shape>
+                <discrete><lattice size="256" boundary="wrap"/></discrete>
+                <invariants><scale-invariance enabled="true"/><rotation-invariance enabled="true"/></invariants>
+            </kernel>`;
+
+            const kernels = kernelSystem.parseKernel(kernelXML);
+            for (const kernel of kernels) {
+                kernelSystem.discretizeKernel(kernel);
+                activeKernels.set(kernel.id, kernel);
+                renderKernelLattice('circle-kernel', kernel);
+            }
+            updateKernelStats();
+        }
+
+        function evolveSpiralKernel() {
+            if (activeKernels.has('spiral')) {
+                kernelSystem.evolveLattice('spiral');
+                renderKernelLattice('spiral-kernel', activeKernels.get('spiral'));
+            }
+        }
+
+        function evolveWaveKernel() {
+            if (activeKernels.has('wave')) {
+                kernelSystem.evolveLattice('wave');
+                renderKernelLattice('wave-kernel', activeKernels.get('wave'));
+            }
+        }
+
+        function evolveCircleKernel() {
+            if (activeKernels.has('circle')) {
+                kernelSystem.evolveLattice('circle');
+                renderKernelLattice('circle-kernel', activeKernels.get('circle'));
+            }
+        }
+
+        function vectorizeSpiral() {
+            if (activeKernels.has('spiral')) {
+                const svg = kernelSystem.latticeToSVG('spiral');
+                if (svg) {
+                    document.getElementById('spiral-kernel').innerHTML = svg;
+                }
+            }
+        }
+
+        function vectorizeWave() {
+            if (activeKernels.has('wave')) {
+                const svg = kernelSystem.latticeToSVG('wave');
+                if (svg) {
+                    document.getElementById('wave-kernel').innerHTML = svg;
+                }
+            }
+        }
+
+        function vectorizeCircle() {
+            if (activeKernels.has('circle')) {
+                const svg = kernelSystem.latticeToSVG('circle');
+                if (svg) {
+                    document.getElementById('circle-kernel').innerHTML = svg;
+                }
+            }
+        }
+
+        function renderKernelLattice(svgId, kernel) {
+            const svg = document.getElementById(svgId);
+            const size = kernel.discrete.lattice.size;
+            const lattice = kernel.lattice;
+
+            let content = `<rect width="${size}" height="${size}" fill="#000"/>`;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const val = lattice[y * size + x];
+                    if (val > 0.1) {
+                        const intensity = Math.floor(val * 255);
+                        content += `<rect x="${x}" y="${y}" width="1" height="1" fill="rgb(${intensity},${intensity},${intensity})"/>`;
+                    }
+                }
+            }
+
+            svg.innerHTML = content;
+        }
+
+        function updateKernelStats() {
+            const stats = document.getElementById('kernel-stats');
+            stats.innerHTML = `Active kernels: ${activeKernels.size}`;
+
+            activeKernels.forEach((kernel, id) => {
+                stats.innerHTML += `<br>${id}: energy=${kernel.energy}, power=${kernel.power}`;
+            });
+        }
+
+        function startAnimation() {
+            function animate() {
+                if (system && system.running) {
+                    system.update();
+                    animationId = requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+
+        function stopAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        // Initialize
+        window.onload = function() {
+            initializeSobelSystem();
+            initializeKernelSystem();
+            system.render();
+        };
+    </script>
+</body>
+</html>
+
+

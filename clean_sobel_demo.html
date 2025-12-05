@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clean Sobel System Demo</title>
+    <style>
+        body { font-family: monospace; background: #000; color: #0f0; margin: 20px; }
+        canvas { border: 2px solid #0f0; }
+        .controls { margin: 20px 0; }
+        button { background: #111; color: #0f0; border: 1px solid #0f0; padding: 8px; margin: 2px; cursor: pointer; }
+        button:hover { background: #0f0; color: #000; }
+        .stats { margin: 20px 0; padding: 10px; background: #111; border: 1px solid #0f0; }
+    </style>
+</head>
+<body>
+    <h1>🔮 Self-Referential Sobel System</h1>
+
+    <div class="controls">
+        <button id="start-btn" onclick="toggleRunning()">▶️ Start</button>
+        <button onclick="resetSystem()">🔄 Reset</button>
+        <button onclick="seedObjects()">🌱 Add Objects</button>
+
+        <button onclick="injectPhase('fixed')">Fixed</button>
+        <button onclick="injectPhase('osc28')">Osc28</button>
+        <button onclick="injectPhase('osc37')">Osc37</button>
+
+        <button onclick="injectBallast(1.0)">Light Ballast</button>
+        <button onclick="injectBallast(5.0)">Medium Ballast</button>
+        <button onclick="injectBallast(10.0)">Heavy Ballast</button>
+    </div>
+
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <svg id="overlay" width="512" height="512" style="position: absolute; top: 0; left: 0;"></svg>
+
+    <div class="stats" id="stats">
+        Frame: <span id="frame-count">0</span> |
+        Objects: <span id="object-count">0</span> |
+        Stability: <span id="avg-stability">0.00</span> |
+        Ballast: <span id="total-mass">0.00</span>
+    </div>
+
+    <script src="sagestring_core.js"></script>
+    <script>
+        let system;
+        let animationId;
+
+        function initSystem() {
+            const canvas = document.getElementById('canvas');
+            const svg = document.getElementById('overlay');
+            system = new window.SageString.SelfReferentialSobelSystem(canvas, svg);
+            system.render();
+            updateStats();
+        }
+
+        function toggleRunning() {
+            if (system.running) {
+                system.running = false;
+                stopAnimation();
+                document.getElementById('start-btn').textContent = '▶️ Start';
+            } else {
+                system.running = true;
+                startAnimation();
+                document.getElementById('start-btn').textContent = '⏸️ Pause';
+            }
+        }
+
+        function resetSystem() {
+            if (system) {
+                system.running = false;
+                stopAnimation();
+                initSystem();
+                document.getElementById('start-btn').textContent = '▶️ Start';
+            }
+        }
+
+        function seedObjects() {
+            if (system) system.seedInitialObjects();
+        }
+
+        function injectPhase(phase) {
+            if (system) system.injectPhase(phase);
+        }
+
+        function injectBallast(amount) {
+            if (system) system.injectBallast(amount);
+        }
+
+        function startAnimation() {
+            function animate() {
+                if (system && system.running) {
+                    system.update();
+                    updateStats();
+                    animationId = requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+
+        function stopAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function updateStats() {
+            if (!system) return;
+            const stats = system.getStats();
+            document.getElementById('frame-count').textContent = stats.frameCount;
+            document.getElementById('object-count').textContent = stats.objectCount;
+            document.getElementById('avg-stability').textContent = stats.avgStability.toFixed(2);
+            document.getElementById('total-mass').textContent = stats.totalBallastMass.toFixed(2);
+        }
+
+        window.onload = initSystem;
+    </script>
+</body>
+</html>
+
+

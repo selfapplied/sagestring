@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SageString - Self-Referential Sobel System</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            margin: 20px;
+            line-height: 1.4;
+        }
+
+        /* Declarative system styles */
+        sagestring-system {
+            display: block;
+            border: 2px solid #0f0;
+            background: #000;
+            position: relative;
+        }
+
+        sagestring-controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        sagestring-button {
+            display: inline-block;
+            background: #111;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        sagestring-button:hover {
+            background: #0f0;
+            color: #000;
+        }
+
+        sagestring-button[active] {
+            background: #0f0;
+            color: #000;
+        }
+
+        sagestring-stats {
+            display: block;
+            margin: 20px 0;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #0f0;
+            font-size: 14px;
+        }
+
+        sagestring-display {
+            display: block;
+            position: relative;
+        }
+
+        canvas, svg {
+            display: block;
+        }
+
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Declarative system definition -->
+    <sagestring-system
+        grid-size="64"
+        sobel-sensitivity="50"
+        stability-threshold="0.3"
+        conservation-factor="0.95"
+        ballast-attraction="0.05"
+        auto-start="false">
+
+        <h1>🔮 Self-Referential Sobel System</h1>
+        <p>Objects detect their own Sobel boundaries and generate wireframe representations through recursive identity retention.</p>
+
+        <!-- Declarative controls -->
+        <sagestring-controls>
+            <sagestring-button action="start">▶️ Start</sagestring-button>
+            <sagestring-button action="reset">🔄 Reset</sagestring-button>
+            <sagestring-button action="seed">🌱 Add Objects</sagestring-button>
+
+            <sagestring-button action="inject-phase" phase="fixed">Fixed Phase</sagestring-button>
+            <sagestring-button action="inject-phase" phase="osc28">Osc28 Phase</sagestring-button>
+            <sagestring-button action="inject-phase" phase="osc37">Osc37 Phase</sagestring-button>
+
+            <sagestring-button action="inject-ballast" amount="1.0">Light Ballast</sagestring-button>
+            <sagestring-button action="inject-ballast" amount="5.0">Medium Ballast</sagestring-button>
+            <sagestring-button action="inject-ballast" amount="10.0">Heavy Ballast</sagestring-button>
+        </sagestring-controls>
+
+        <!-- Declarative display -->
+        <sagestring-display width="512" height="512">
+            <canvas></canvas>
+            <svg></svg>
+        </sagestring-display>
+
+        <!-- Declarative stats -->
+        <sagestring-stats>
+            <span data-stat="frame-count">Frame: 0</span> |
+            <span data-stat="object-count">Objects: 0</span> |
+            <span data-stat="avg-stability">Stability: 0.00</span> |
+            <span data-stat="total-ballast-mass">Ballast: 0.00</span> |
+            <span data-stat="ballast-resonance">Resonance: 0.00</span>
+        </sagestring-stats>
+
+        <!-- Declarative initial objects -->
+        <sagestring-objects>
+            <sagestring-object x="20" y="20" radius="8"></sagestring-object>
+            <sagestring-object x="44" y="20" radius="6"></sagestring-object>
+            <sagestring-object x="32" y="44" radius="10"></sagestring-object>
+        </sagestring-objects>
+    </sagestring-system>
+
+    <!-- Declarative system loader -->
+    <script src="core.js"></script>
+</body>
+</html>

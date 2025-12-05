@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Self-Referential Sobel System: Sobel-Bounded Phase Objects</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            margin: 20px;
+        }
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .grid-display {
+            width: 600px;
+            height: 600px;
+            background: #000;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .controls {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+        .stats {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .object-info {
+            background: #111;
+            border: 1px solid #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #3a3a3a;
+        }
+        button.active {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+        .phase-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .phase-fixed { background: #666; }
+        .phase-osc28 { background: #4a9eff; animation: pulse 28s infinite; }
+        .phase-osc37 { background: #ff6b6b; animation: pulse 37s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .stability-bar {
+            display: inline-block;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-left: 8px;
+            width: 60px;
+        }
+        .stability-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .wireframe-preview {
+            width: 100px;
+            height: 100px;
+            background: #000;
+            border: 1px solid #444;
+            display: inline-block;
+            margin: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Self-Referential Sobel System</h1>
+    <p><strong>Sobel-bounded, grid-based objects</strong> with phase dynamics and recursive identity retention</p>
+
+    <div class="grid-container">
+        <div class="grid-display" id="grid-display">
+            <canvas class="grid-canvas" id="grid-canvas" width="600" height="600"></canvas>
+            <svg class="grid-canvas" id="grid-svg" width="600" height="600"></svg>
+        </div>
+
+        <div class="controls">
+            <h3>System Controls</h3>
+            <div>
+                <button onclick="toggleRunning()" id="run-btn">▶️ Start</button>
+                <button onclick="resetSystem()">🔄 Reset</button>
+                <button onclick="seedObjects()">🌱 Seed Objects</button>
+            </div>
+
+            <h4>Phase Injection</h4>
+            <div>
+                <button onclick="injectPhase('fixed')">Fixed</button>
+                <button onclick="injectPhase('osc28')">Osc-28</button>
+                <button onclick="injectPhase('osc37')">Osc-37</button>
+            </div>
+
+            <h4>Ballast Injection</h4>
+            <div>
+                <button onclick="injectBallastMass(1.0)">Light Ballast</button>
+                <button onclick="injectBallastMass(5.0)">Medium Ballast</button>
+                <button onclick="injectBallastMass(10.0)">Heavy Ballast</button>
+            </div>
+
+            <h4>Parameters</h4>
+            <div>
+                <label>Grid Size: <input type="range" id="grid-size" min="32" max="128" value="64" oninput="updateGridSize()"></label>
+                <br>
+                <label>Stability Threshold: <input type="range" id="stability-threshold" min="0" max="1" step="0.1" value="0.3" oninput="updateStabilityThreshold()"></label>
+                <br>
+                <label>Sobel Sensitivity: <input type="range" id="sobel-sensitivity" min="10" max="100" value="50" oninput="updateSobelSensitivity()"></label>
+                <br>
+                <label>Conservation Factor: <input type="range" id="conservation-factor" min="0.8" max="0.99" step="0.01" value="0.95" oninput="updateConservationFactor()"></label>
+                <br>
+                <label>Ballast Attraction: <input type="range" id="ballast-attraction" min="0" max="0.2" step="0.01" value="0.05" oninput="updateBallastAttraction()"></label>
+            </div>
+
+            <h4>Rendering Mode</h4>
+            <div>
+                <button onclick="setRenderMode('wireframe')" class="active" id="wireframe-btn">Wireframe</button>
+                <button onclick="setRenderMode('filled')" id="filled-btn">Filled</button>
+                <button onclick="setRenderMode('gradient')" id="gradient-btn">Gradient</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats" id="stats">
+        <h3>System Statistics</h3>
+        <div>Frame: <span id="frame-count">0</span></div>
+        <div>Active Objects: <span id="object-count">0</span></div>
+        <div>Average Stability: <span id="avg-stability">0.00</span></div>
+        <div>Phase Distribution: Fixed=<span id="phase-fixed-count">0</span>, Osc28=<span id="phase-osc28-count">0</span>, Osc37=<span id="phase-osc37-count">0</span></div>
+        <div>Witness Coherence: <span id="witness-coherence">0.00</span></div>
+        <div>Ballast Mass: <span id="total-ballast-mass">0.00</span> | Resonance: <span id="ballast-resonance">0.00</span></div>
+        <div>Ballast Fields: <span id="ballast-field-count">0</span> | Memory Footprints: <span id="memory-footprint-count">0</span></div>
+    </div>
+
+    <div class="stats" id="object-list">
+        <h3>Active Objects</h3>
+        <div id="object-details"></div>
+    </div>
+
+    <script>
+        // Self-Referential Sobel System
+        class SelfReferentialSobelSystem {
+            constructor(canvas, svg) {
+                this.canvas = canvas;
+                this.svg = svg;
+                this.ctx = canvas.getContext('2d');
+
+                // System parameters
+                this.gridSize = 64;
+                this.cellSize = canvas.width / this.gridSize;
+                this.running = false;
+                this.frameCount = 0;
+
+                // Sobel detector
+                this.sobelSensitivity = 50;
+
+                // Phase system (Feigenbaum-style)
+                this.bifurcationParameter = 3.5; // Feigenbaum point
+
+                // Objects
+                this.objects = new Map();
+                this.objectIdCounter = 0;
+                this.stabilityThreshold = 0.3;
+
+                // Ballast System
+                this.ballastSystem = {
+                    totalStabilityMass: 0,
+                    stabilityBudget: this.gridSize * this.gridSize * 0.1, // 10% of grid capacity
+                    ballastFields: new Map(),
+                    conservationFactor: 0.95, // Energy conservation
+                    redistributionRate: 0.1,
+                    ballastTiers: {
+                        tier1: { threshold: 0.3, massMultiplier: 1.0, decayRate: 0.02 },
+                        tier2: { threshold: 0.6, massMultiplier: 2.0, decayRate: 0.01 },
+                        tier3: { threshold: 0.8, massMultiplier: 3.0, decayRate: 0.005 }
+                    },
+                    globalAttraction: 0.05, // How much ballast fields attract objects
+                    memoryBallast: [], // Accumulated stable configurations
+                    ballastResonance: 0.0 // Global stability resonance
+                };
+
+                // Rendering
+                this.renderMode = 'wireframe';
+
+                // Initialize grid
+                this.grid = this.createGrid();
+                this.initializeGrid();
+            }
+
+            createGrid() {
+                const grid = [];
+                for (let y = 0; y < this.gridSize; y++) {
+                    const row = [];
+                    for (let x = 0; x < this.gridSize; x++) {
+                        row.push({
+                            x, y,
+                            value: 0,
+                            phase: 'fixed',
+                            stability: 0,
+                            age: 0,
+                            sobelGradient: { magnitude: 0, direction: 0 },
+                            wireframeSignature: null,
+                            objectId: null
+                        });
+                    }
+                    grid.push(row);
+                }
+                return grid;
+            }
+
+            initializeGrid() {
+                // Initialize with some noise and seed objects
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        cell.value = Math.random() * 0.1; // Small noise
+                        cell.phase = this.randomPhase();
+                        cell.stability = Math.random() * 0.2;
+                    }
+                }
+
+                // Create initial objects
+                this.seedInitialObjects();
+            }
+
+            randomPhase() {
+                const phases = ['fixed', 'osc28', 'osc37'];
+                return phases[Math.floor(Math.random() * phases.length)];
+            }
+
+            seedInitialObjects() {
+                // Create some initial circular objects
+                const centers = [
+                    {x: 16, y: 16, radius: 8},
+                    {x: 48, y: 16, radius: 6},
+                    {x: 32, y: 48, radius: 10}
+                ];
+
+                for (const center of centers) {
+                    this.createObject(center.x, center.y, center.radius);
+                }
+            }
+
+            createObject(centerX, centerY, radius) {
+                const objectId = ++this.objectIdCounter;
+                const object = {
+                    id: objectId,
+                    centerX, centerY,
+                    radius,
+                    stability: 0.8,
+                    age: 0,
+                    phase: this.randomPhase(),
+                    cells: [],
+                    wireframeSignature: this.generateWireframeSignature(radius),
+                    sobelSignature: this.generateSobelSignature(radius),
+                    // Ballast properties
+                    stabilityMass: 0,
+                    ballastTier: 1,
+                    ballastField: null,
+                    conservedEnergy: 0,
+                    memoryFootprint: null
+                };
+
+                // Assign cells to object
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const x = centerX + dx;
+                        const y = centerY + dy;
+
+                        if (x >= 0 && x < this.gridSize && y >= 0 && y < this.gridSize) {
+                            const distance = Math.sqrt(dx*dx + dy*dy);
+                            if (distance <= radius) {
+                                const cell = this.grid[y][x];
+                                cell.objectId = objectId;
+                                cell.value = 1;
+                                cell.phase = object.phase;
+                                cell.stability = object.stability;
+                                object.cells.push(cell);
+                            }
+                        }
+                    }
+                }
+
+                this.objects.set(objectId, object);
+                return object;
+            }
+
+            generateWireframeSignature(radius) {
+                // Generate a wireframe path based on radius
+                const points = [];
+                const segments = Math.max(8, Math.floor(radius * 2));
+
+                for (let i = 0; i < segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const r = radius * (0.8 + Math.sin(angle * 3) * 0.2); // Perturbed circle
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    points.push({x, y});
+                }
+
+                // Create SVG path
+                let path = `M${points[0].x} ${points[0].y}`;
+                for (let i = 1; i < points.length; i++) {
+                    path += ` L${points[i].x} ${points[i].y}`;
+                }
+                path += ' Z';
+
+                return path;
+            }
+
+            generateSobelSignature(radius) {
+                // Generate Sobel-like edge signature
+                const signature = [];
+                const steps = Math.floor(radius * 4);
+
+                for (let i = 0; i < steps; i++) {
+                    const angle = (i / steps) * Math.PI * 2;
+                    const gradient = Math.sin(angle * 2) * 0.5 + 0.5; // Simulated gradient
+                    signature.push({
+                        angle,
+                        magnitude: gradient,
+                        direction: angle + Math.PI/2
+                    });
+                }
+
+                return signature;
+            }
+
+            update() {
+                if (!this.running) return;
+
+                this.frameCount++;
+
+                // Update Sobel gradients for entire grid
+                this.computeSobelGradients();
+
+                // Update each object
+                for (const [id, object] of this.objects) {
+                    this.updateObject(object);
+                }
+
+                // Apply phase dynamics
+                this.applyPhaseDynamics();
+
+                // Update ballast system
+                this.updateBallastSystem();
+
+                // Update object stability and cleanup
+                this.updateObjectStability();
+
+                // Attempt object rebirth
+                this.attemptObjectRebirth();
+
+                // Render
+                this.render();
+            }
+
+            computeSobelGradients() {
+                // Simplified Sobel operator across the grid
+                for (let y = 1; y < this.gridSize - 1; y++) {
+                    for (let x = 1; x < this.gridSize - 1; x++) {
+                        const cell = this.grid[y][x];
+
+                        // Sobel X kernel
+                        const gx = -this.grid[y-1][x-1].value + this.grid[y-1][x+1].value +
+                                  -2 * this.grid[y][x-1].value + 2 * this.grid[y][x+1].value +
+                                  -this.grid[y+1][x-1].value + this.grid[y+1][x+1].value;
+
+                        // Sobel Y kernel
+                        const gy = -this.grid[y-1][x-1].value - 2 * this.grid[y-1][x].value - this.grid[y-1][x+1].value +
+                                   this.grid[y+1][x-1].value + 2 * this.grid[y+1][x].value + this.grid[y+1][x+1].value;
+
+                        const magnitude = Math.sqrt(gx*gx + gy*gy);
+                        const direction = Math.atan2(gy, gx);
+
+                        cell.sobelGradient = {
+                            magnitude: Math.min(1, magnitude / this.sobelSensitivity),
+                            direction: direction
+                        };
+                    }
+                }
+            }
+
+            updateObject(object) {
+                object.age++;
+
+                // Update object stability based on boundary integrity
+                let boundaryStrength = 0;
+                let cellCount = 0;
+
+                for (const cell of object.cells) {
+                    if (cell.objectId === object.id) {
+                        boundaryStrength += cell.sobelGradient.magnitude;
+                        cellCount++;
+                    }
+                }
+
+                if (cellCount > 0) {
+                    const newStability = boundaryStrength / cellCount;
+                    object.stability = object.stability * 0.9 + newStability * 0.1; // Smooth stability
+                }
+
+                // Apply ballast influence
+                this.applyBallastInfluence(object);
+
+                // Update phase dynamics (Feigenbaum-style bifurcation)
+                this.updateObjectPhase(object);
+
+                // Update ballast mass and tier
+                this.updateObjectBallast(object);
+
+                // Update cell values based on object properties
+                for (const cell of object.cells) {
+                    if (cell.objectId === object.id) {
+                        // Include ballast influence in cell values
+                        const ballastBoost = object.stabilityMass * 0.1;
+                        cell.value = Math.max(0, Math.min(1,
+                            (object.stability + ballastBoost) * (0.5 + 0.5 * Math.sin(this.frameCount * 0.1 * (object.phase === 'osc28' ? 28 : object.phase === 'osc37' ? 37 : 1)))
+                        ));
+                        cell.stability = object.stability;
+                        cell.age = object.age;
+                    }
+                }
+            }
+
+            updateObjectPhase(object) {
+                // Feigenbaum-style phase mapping
+                if (object.phase === 'fixed') {
+                    // Fixed point dynamics - maintain stability
+                    object.stability *= 0.99;
+                } else {
+                    // Oscillatory dynamics with bifurcation
+                    const period = object.phase === 'osc28' ? 28 : 37;
+                    const phase = (this.frameCount / period) * Math.PI * 2;
+
+                    // Apply logistic map for bifurcation
+                    const r = this.bifurcationParameter;
+                    const x = object.stability;
+                    const newX = r * x * (1 - x);
+
+                    object.stability = Math.max(0, Math.min(1, newX));
+
+                    // Add phase-driven oscillation
+                    object.stability += 0.1 * Math.sin(phase);
+                }
+            }
+
+            applyPhaseDynamics() {
+                // Global phase coupling between nearby cells
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        let couplingSum = 0;
+                        let couplingCount = 0;
+
+                        // Check neighboring cells
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                if (dx === 0 && dy === 0) continue;
+
+                                const nx = x + dx;
+                                const ny = y + dy;
+
+                                if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                    const neighbor = this.grid[ny][nx];
+                                    if (neighbor.phase === cell.phase) {
+                                        couplingSum += neighbor.stability;
+                                        couplingCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (couplingCount > 0) {
+                            const couplingStrength = couplingSum / couplingCount;
+                            cell.stability = cell.stability * 0.95 + couplingStrength * 0.05;
+                        }
+                    }
+                }
+            }
+
+            updateObjectStability() {
+                // Remove unstable objects with ballast consideration
+                const objectsToRemove = [];
+
+                for (const [id, object] of this.objects) {
+                    const effectiveThreshold = this.stabilityThreshold - (object.stabilityMass * 0.1);
+
+                    if (object.stability < effectiveThreshold) {
+                        objectsToRemove.push(id);
+                    }
+                }
+
+                // Redistribute ballast from removed objects
+                for (const id of objectsToRemove) {
+                    const object = this.objects.get(id);
+                    this.redistributeBallast(object);
+                    this.removeObject(id);
+                }
+            }
+
+            removeObject(objectId) {
+                const object = this.objects.get(objectId);
+                if (!object) return;
+
+                // Mark cells as free
+                for (const cell of object.cells) {
+                    if (cell.objectId === objectId) {
+                        cell.objectId = null;
+                        cell.value = 0;
+                        cell.stability = 0;
+                    }
+                }
+
+                // Remove ballast field
+                if (object.ballastField) {
+                    this.ballastSystem.ballastFields.delete(objectId);
+                }
+
+                // Remove from total mass
+                this.ballastSystem.totalStabilityMass -= object.stabilityMass;
+
+                this.objects.delete(objectId);
+            }
+
+            // Ballast System Methods
+            applyBallastInfluence(object) {
+                // Apply global ballast resonance
+                const resonanceBoost = this.ballastSystem.ballastResonance * 0.1;
+                object.stability += resonanceBoost;
+
+                // Apply local ballast field attraction
+                if (object.ballastField) {
+                    const fieldStrength = object.ballastField.strength;
+                    object.stability += fieldStrength * 0.05;
+                }
+
+                // Apply memory ballast influence
+                const memoryInfluence = this.getMemoryBallastInfluence(object);
+                object.stability += memoryInfluence * 0.03;
+            }
+
+            updateObjectBallast(object) {
+                // Accumulate stability mass over time
+                const massGain = object.stability * object.age * 0.001;
+                object.stabilityMass += massGain;
+
+                // Apply conservation factor
+                object.stabilityMass *= this.ballastSystem.conservationFactor;
+
+                // Update ballast tier based on mass and stability
+                this.updateBallastTier(object);
+
+                // Generate or update ballast field
+                this.updateBallastField(object);
+
+                // Add to total system mass
+                this.ballastSystem.totalStabilityMass += massGain;
+
+                // Create memory footprint for stable objects
+                if (object.stability > 0.7 && object.age > 50) {
+                    this.createMemoryFootprint(object);
+                }
+            }
+
+            updateBallastTier(object) {
+                const tiers = this.ballastSystem.ballastTiers;
+                const combinedMetric = (object.stability + object.stabilityMass * 0.1) / 2;
+
+                if (combinedMetric >= tiers.tier3.threshold) {
+                    object.ballastTier = 3;
+                } else if (combinedMetric >= tiers.tier2.threshold) {
+                    object.ballastTier = 2;
+                } else {
+                    object.ballastTier = 1;
+                }
+
+                // Apply tier-specific decay
+                const tier = tiers[`tier${object.ballastTier}`];
+                object.stabilityMass *= (1 - tier.decayRate);
+            }
+
+            updateBallastField(object) {
+                if (object.stability > 0.5) {
+                    const tier = this.ballastSystem.ballastTiers[`tier${object.ballastTier}`];
+                    const fieldStrength = object.stability * tier.massMultiplier * 0.1;
+
+                    object.ballastField = {
+                        centerX: object.centerX,
+                        centerY: object.centerY,
+                        radius: object.radius * 2,
+                        strength: fieldStrength,
+                        tier: object.ballastTier
+                    };
+
+                    this.ballastSystem.ballastFields.set(object.id, object.ballastField);
+                } else {
+                    // Remove weak fields
+                    if (object.ballastField) {
+                        this.ballastSystem.ballastFields.delete(object.id);
+                        object.ballastField = null;
+                    }
+                }
+            }
+
+            redistributeBallast(deadObject) {
+                if (deadObject.stabilityMass <= 0) return;
+
+                // Conserve energy by redistributing to nearby objects
+                const redistributionAmount = deadObject.stabilityMass * this.ballastSystem.redistributionRate;
+
+                // Find nearby objects to receive the ballast
+                const nearbyObjects = this.findNearbyObjects(deadObject.centerX, deadObject.centerY, deadObject.radius * 3);
+
+                if (nearbyObjects.length > 0) {
+                    const sharePerObject = redistributionAmount / nearbyObjects.length;
+                    for (const nearbyObj of nearbyObjects) {
+                        nearbyObj.stabilityMass += sharePerObject;
+                        nearbyObj.conservedEnergy += sharePerObject * 0.5;
+                    }
+                } else {
+                    // Create new ballast field at location
+                    this.createResidualBallastField(deadObject.centerX, deadObject.centerY, redistributionAmount);
+                }
+
+                // Update global ballast resonance
+                this.updateBallastResonance();
+            }
+
+            findNearbyObjects(centerX, centerY, radius) {
+                const nearby = [];
+
+                for (const [id, object] of this.objects) {
+                    const distance = Math.sqrt(
+                        Math.pow(object.centerX - centerX, 2) +
+                        Math.pow(object.centerY - centerY, 2)
+                    );
+
+                    if (distance <= radius) {
+                        nearby.push(object);
+                    }
+                }
+
+                return nearby;
+            }
+
+            createResidualBallastField(x, y, energy) {
+                // Create a temporary ballast field that can attract new objects
+                const fieldId = `residual_${Date.now()}`;
+
+                this.ballastSystem.ballastFields.set(fieldId, {
+                    centerX: x,
+                    centerY: y,
+                    radius: 5,
+                    strength: energy * 0.1,
+                    tier: 1,
+                    residual: true,
+                    decay: 0.95,
+                    lifetime: 100 // frames
+                });
+            }
+
+            updateBallastResonance() {
+                // Calculate global stability resonance from ballast fields
+                let totalFieldStrength = 0;
+                let fieldCount = 0;
+
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    totalFieldStrength += field.strength;
+                    fieldCount++;
+                }
+
+                if (fieldCount > 0) {
+                    this.ballastSystem.ballastResonance = Math.min(1, totalFieldStrength / fieldCount);
+                } else {
+                    this.ballastSystem.ballastResonance *= 0.99; // Decay resonance
+                }
+            }
+
+            createMemoryFootprint(object) {
+                // Create a compressed representation of stable object configuration
+                object.memoryFootprint = {
+                    centerX: object.centerX,
+                    centerY: object.centerY,
+                    radius: object.radius,
+                    phase: object.phase,
+                    stabilitySignature: object.stability,
+                    ballastTier: object.ballastTier,
+                    timestamp: this.frameCount
+                };
+
+                // Add to memory ballast (keep last 20)
+                this.ballastSystem.memoryBallast.push(object.memoryFootprint);
+                if (this.ballastSystem.memoryBallast.length > 20) {
+                    this.ballastSystem.memoryBallast.shift();
+                }
+            }
+
+            getMemoryBallastInfluence(object) {
+                let influence = 0;
+
+                for (const memory of this.ballastSystem.memoryBallast) {
+                    const distance = Math.sqrt(
+                        Math.pow(object.centerX - memory.centerX, 2) +
+                        Math.pow(object.centerY - memory.centerY, 2)
+                    );
+
+                    // Influence decreases with distance and time
+                    const spatialInfluence = Math.max(0, 1 - distance / 20);
+                    const temporalInfluence = Math.max(0, 1 - (this.frameCount - memory.timestamp) / 500);
+                    const phaseMatch = object.phase === memory.phase ? 1.5 : 1.0;
+
+                    influence += spatialInfluence * temporalInfluence * phaseMatch * 0.05;
+                }
+
+                return Math.min(0.2, influence);
+            }
+
+            updateBallastSystem() {
+                // Update residual ballast fields
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    if (field.residual) {
+                        field.strength *= field.decay;
+                        field.lifetime--;
+
+                        if (field.lifetime <= 0 || field.strength < 0.01) {
+                            this.ballastSystem.ballastFields.delete(id);
+                        }
+                    }
+                }
+
+                // Enforce stability budget
+                this.enforceStabilityBudget();
+
+                // Update global resonance
+                this.updateBallastResonance();
+            }
+
+            enforceStabilityBudget() {
+                // Prevent system from becoming too stable or unstable
+                const currentMass = this.ballastSystem.totalStabilityMass;
+                const budget = this.ballastSystem.stabilityBudget;
+
+                if (currentMass > budget * 1.2) {
+                    // Too much mass - increase decay rates globally
+                    const excessRatio = currentMass / budget;
+                    for (const [id, object] of this.objects) {
+                        object.stabilityMass *= (0.98 - (excessRatio - 1) * 0.1);
+                    }
+                } else if (currentMass < budget * 0.5) {
+                    // Too little mass - encourage stability growth
+                    for (const [id, object] of this.objects) {
+                        if (object.stability > 0.6) {
+                            object.stabilityMass *= 1.02;
+                        }
+                    }
+                }
+            }
+
+            attemptObjectRebirth() {
+                // Look for regions with high gradient that could form new objects
+                const candidates = [];
+
+                for (let y = 2; y < this.gridSize - 2; y++) {
+                    for (let x = 2; x < this.gridSize - 2; x++) {
+                        const cell = this.grid[y][x];
+
+                        // Check if cell is free and has high gradient
+                        if (cell.objectId === null && cell.sobelGradient.magnitude > 0.5) {
+                            let regionGradient = 0;
+                            let regionSize = 0;
+                            let ballastInfluence = 0;
+
+                            // Check surrounding region
+                            for (let dy = -2; dy <= 2; dy++) {
+                                for (let dx = -2; dx <= 2; dx++) {
+                                    const nx = x + dx;
+                                    const ny = y + dy;
+                                    if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                        regionGradient += this.grid[ny][nx].sobelGradient.magnitude;
+                                        regionSize++;
+
+                                        // Check for ballast field influence
+                                        for (const [fieldId, field] of this.ballastSystem.ballastFields) {
+                                            const distance = Math.sqrt(
+                                                Math.pow(nx - field.centerX, 2) +
+                                                Math.pow(ny - field.centerY, 2)
+                                            );
+                                            if (distance <= field.radius) {
+                                                ballastInfluence += field.strength * (1 - distance / field.radius);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            const avgGradient = regionGradient / regionSize;
+                            const totalPotential = avgGradient + ballastInfluence * 0.5;
+
+                            if (totalPotential > 0.3) {
+                                candidates.push({
+                                    x, y,
+                                    gradient: avgGradient,
+                                    ballastBoost: ballastInfluence,
+                                    size: Math.floor(totalPotential * 10) + 3
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Create objects from top candidates (limit to avoid overcrowding)
+                candidates.sort((a, b) => (b.gradient + b.ballastBoost) - (a.gradient + a.ballastBoost));
+                const maxNewObjects = Math.max(1, Math.floor(this.gridSize / 16));
+
+                for (let i = 0; i < Math.min(candidates.length, maxNewObjects); i++) {
+                    const candidate = candidates[i];
+                    const newObject = this.createObject(candidate.x, candidate.y, candidate.size);
+
+                    // Boost new object with ballast influence
+                    if (candidate.ballastBoost > 0) {
+                        newObject.stabilityMass += candidate.ballastBoost * 0.1;
+                        newObject.conservedEnergy += candidate.ballastBoost * 0.05;
+                    }
+                }
+            }
+
+            render() {
+                // Clear
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Clear SVG
+                this.svg.innerHTML = '';
+
+                if (this.renderMode === 'wireframe') {
+                    this.renderWireframe();
+                } else if (this.renderMode === 'filled') {
+                    this.renderFilled();
+                } else if (this.renderMode === 'gradient') {
+                    this.renderGradient();
+                }
+
+                // Render objects as overlays
+                this.renderObjects();
+
+                // Update statistics
+                this.updateStats();
+            }
+
+            renderWireframe() {
+                // Render cells with wireframe appearance
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const intensity = cell.value;
+
+                        if (intensity > 0.1) {
+                            this.ctx.fillStyle = `hsl(${cell.phase === 'fixed' ? 0 : cell.phase === 'osc28' ? 220 : 0},
+                                                   ${50 + intensity * 50}%,
+                                                   ${20 + intensity * 30}%)`;
+                            this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                        }
+
+                        // Draw Sobel edges
+                        if (cell.sobelGradient.magnitude > 0.3) {
+                            this.ctx.strokeStyle = '#fff';
+                            this.ctx.lineWidth = 1;
+                            this.ctx.strokeRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                        }
+                    }
+                }
+            }
+
+            renderFilled() {
+                // Render cells as filled shapes
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const intensity = cell.value;
+
+                        this.ctx.fillStyle = `rgba(${cell.phase === 'fixed' ? '100,100,100' :
+                                                   cell.phase === 'osc28' ? '74,144,226' : '255,107,107'},
+                                                  ${intensity})`;
+                        this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                    }
+                }
+            }
+
+            renderGradient() {
+                // Render using stability gradients
+                for (let y = 0; y < this.gridSize; y++) {
+                    for (let x = 0; x < this.gridSize; x++) {
+                        const cell = this.grid[y][x];
+                        const hue = cell.phase === 'fixed' ? 0 : cell.phase === 'osc28' ? 220 : 0;
+                        const saturation = 30 + cell.stability * 70;
+                        const lightness = 10 + cell.value * 40;
+
+                        this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                        this.ctx.fillRect(x * this.cellSize, y * this.cellSize, this.cellSize, this.cellSize);
+                    }
+                }
+            }
+
+            renderObjects() {
+                // Render ballast fields first (background layer)
+                this.renderBallastFields();
+
+                // Render object wireframes as SVG overlays
+                for (const [id, object] of this.objects) {
+                    const cx = object.centerX * this.cellSize;
+                    const cy = object.centerY * this.cellSize;
+                    const scale = (object.radius * this.cellSize) / 50; // Scale to fit
+
+                    // Create wireframe path
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', object.wireframeSignature);
+
+                    // Style based on object properties and ballast
+                    const hue = object.phase === 'fixed' ? 0 : object.phase === 'osc28' ? 220 : 0;
+                    const saturation = 70 + object.stability * 30;
+                    const lightness = 50 + object.age * 0.1;
+                    const ballastBoost = object.stabilityMass * 10; // Visual ballast indicator
+
+                    path.setAttribute('stroke', `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+                    path.setAttribute('stroke-width', `${2 + ballastBoost}`);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('transform', `translate(${cx}, ${cy}) scale(${scale})`);
+
+                    // Enhanced glow effect for stable, high-ballast objects
+                    if (object.stability > 0.7 || object.ballastTier > 1) {
+                        path.setAttribute('filter', `url(#glow${object.ballastTier})`);
+                    }
+
+                    this.svg.appendChild(path);
+
+                    // Add ballast tier indicator
+                    if (object.ballastTier > 1) {
+                        const tierCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        tierCircle.setAttribute('cx', cx);
+                        tierCircle.setAttribute('cy', cy);
+                        tierCircle.setAttribute('r', object.radius * this.cellSize * 0.6);
+                        tierCircle.setAttribute('stroke', `hsl(${hue}, 100%, 80%)`);
+                        tierCircle.setAttribute('stroke-width', object.ballastTier);
+                        tierCircle.setAttribute('fill', 'none');
+                        tierCircle.setAttribute('opacity', '0.6');
+                        this.svg.appendChild(tierCircle);
+                    }
+
+                    // Add stability indicator with ballast info
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', cx);
+                    circle.setAttribute('cy', cy);
+                    circle.setAttribute('r', object.radius * this.cellSize * 0.8);
+                    circle.setAttribute('stroke', `hsl(${hue}, 100%, 70%)`);
+                    circle.setAttribute('stroke-width', '1');
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke-dasharray', '5,5');
+                    circle.setAttribute('opacity', '0.3');
+                    this.svg.appendChild(circle);
+                }
+
+                // Add glow filter definitions for different ballast tiers
+                if (!this.svg.querySelector('#glow1')) {
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+                    for (let tier = 1; tier <= 3; tier++) {
+                        const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                        filter.setAttribute('id', `glow${tier}`);
+                        const blurAmount = tier * 1.5;
+                        filter.innerHTML = `
+                            <feGaussianBlur stdDeviation="${blurAmount}" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        `;
+                        defs.appendChild(filter);
+                    }
+
+                    this.svg.appendChild(defs);
+                }
+            }
+
+            renderBallastFields() {
+                // Render ballast fields as background gradients
+                for (const [id, field] of this.ballastSystem.ballastFields) {
+                    const cx = field.centerX * this.cellSize;
+                    const cy = field.centerY * this.cellSize;
+                    const radius = field.radius * this.cellSize;
+
+                    // Create radial gradient for ballast field
+                    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
+                    gradient.setAttribute('id', `ballastField${id}`);
+                    gradient.setAttribute('cx', '50%');
+                    gradient.setAttribute('cy', '50%');
+                    gradient.setAttribute('r', '50%');
+
+                    const stops = [
+                        {offset: '0%', opacity: field.strength * 0.3},
+                        {offset: '70%', opacity: field.strength * 0.1},
+                        {offset: '100%', opacity: '0'}
+                    ];
+
+                    for (let i = 0; i < stops.length; i++) {
+                        const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                        stop.setAttribute('offset', stops[i].offset);
+                        stop.setAttribute('stop-color', field.residual ? '#444' : '#666');
+                        stop.setAttribute('stop-opacity', stops[i].opacity);
+                        gradient.appendChild(stop);
+                    }
+
+                    this.svg.appendChild(gradient);
+
+                    // Create field circle
+                    const fieldCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    fieldCircle.setAttribute('cx', cx);
+                    fieldCircle.setAttribute('cy', cy);
+                    fieldCircle.setAttribute('r', radius);
+                    fieldCircle.setAttribute('fill', `url(#ballastField${id})`);
+                    fieldCircle.setAttribute('opacity', field.residual ? '0.3' : '0.5');
+
+                    this.svg.appendChild(fieldCircle);
+                }
+            }
+
+            updateStats() {
+                document.getElementById('frame-count').textContent = this.frameCount;
+                document.getElementById('object-count').textContent = this.objects.size;
+
+                let totalStability = 0;
+                let phaseCounts = {fixed: 0, osc28: 0, osc37: 0};
+
+                for (const [id, object] of this.objects) {
+                    totalStability += object.stability;
+                    phaseCounts[object.phase]++;
+                }
+
+                const avgStability = this.objects.size > 0 ? totalStability / this.objects.size : 0;
+                document.getElementById('avg-stability').textContent = avgStability.toFixed(2);
+
+                document.getElementById('phase-fixed-count').textContent = phaseCounts.fixed;
+                document.getElementById('phase-osc28-count').textContent = phaseCounts.osc28;
+                document.getElementById('phase-osc37-count').textContent = phaseCounts.osc37;
+
+                // Calculate witness coherence (simplified)
+                const coherence = avgStability * (this.objects.size / Math.max(1, this.gridSize * this.gridSize * 0.01));
+                document.getElementById('witness-coherence').textContent = Math.min(1, coherence).toFixed(2);
+
+                // Update ballast statistics
+                document.getElementById('total-ballast-mass').textContent = this.ballastSystem.totalStabilityMass.toFixed(2);
+                document.getElementById('ballast-resonance').textContent = this.ballastSystem.ballastResonance.toFixed(2);
+                document.getElementById('ballast-field-count').textContent = this.ballastSystem.ballastFields.size;
+                document.getElementById('memory-footprint-count').textContent = this.ballastSystem.memoryBallast.length;
+
+                // Update object details
+                this.updateObjectDetails();
+            }
+
+            updateObjectDetails() {
+                const container = document.getElementById('object-details');
+                container.innerHTML = '';
+
+                for (const [id, object] of this.objects) {
+                    const div = document.createElement('div');
+                    div.className = 'object-info';
+
+                    const phaseClass = object.phase === 'fixed' ? 'phase-fixed' :
+                                     object.phase === 'osc28' ? 'phase-osc28' : 'phase-osc37';
+
+                    div.innerHTML = `
+                        <div>
+                            <span class="phase-indicator ${phaseClass}"></span>
+                            Object ${id} (${object.phase}) [Tier ${object.ballastTier}]
+                            <span class="stability-bar">
+                                <span class="stability-fill" style="width: ${object.stability * 100}%; background: hsl(${object.phase === 'fixed' ? 0 : object.phase === 'osc28' ? 220 : 0}, 70%, 50%);"></span>
+                            </span>
+                        </div>
+                        <div>Age: ${object.age}, Stability: ${object.stability.toFixed(2)}, Mass: ${object.stabilityMass.toFixed(2)}, Cells: ${object.cells.length}</div>
+                    `;
+
+                    container.appendChild(div);
+                }
+            }
+
+            setGridSize(size) {
+                this.gridSize = size;
+                this.cellSize = this.canvas.width / this.gridSize;
+                this.grid = this.createGrid();
+                this.initializeGrid();
+                this.render();
+            }
+
+            setStabilityThreshold(threshold) {
+                this.stabilityThreshold = threshold;
+            }
+
+            setSobelSensitivity(sensitivity) {
+                this.sobelSensitivity = sensitivity;
+            }
+
+            injectPhase(phase) {
+                // Inject phase into random regions
+                const injectionPoints = 5;
+
+                for (let i = 0; i < injectionPoints; i++) {
+                    const x = Math.floor(Math.random() * this.gridSize);
+                    const y = Math.floor(Math.random() * this.gridSize);
+
+                    // Affect region around injection point
+                    for (let dy = -3; dy <= 3; dy++) {
+                        for (let dx = -3; dx <= 3; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+
+                            if (nx >= 0 && nx < this.gridSize && ny >= 0 && ny < this.gridSize) {
+                                const cell = this.grid[ny][nx];
+                                const distance = Math.sqrt(dx*dx + dy*dy);
+                                const influence = Math.max(0, 1 - distance / 3);
+
+                                if (Math.random() < influence) {
+                                    cell.phase = phase;
+                                    cell.stability = Math.max(cell.stability, 0.5);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Global system instance
+        let system;
+        let animationId;
+
+        function initializeSystem() {
+            const canvas = document.getElementById('grid-canvas');
+            const svg = document.getElementById('grid-svg');
+            system = new SelfReferentialSobelSystem(canvas, svg);
+        }
+
+        function startAnimation() {
+            function animate() {
+                system.update();
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function stopAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        // Control functions
+        function toggleRunning() {
+            if (system.running) {
+                system.running = false;
+                stopAnimation();
+                document.getElementById('run-btn').textContent = '▶️ Start';
+            } else {
+                system.running = true;
+                startAnimation();
+                document.getElementById('run-btn').textContent = '⏸️ Pause';
+            }
+        }
+
+        function resetSystem() {
+            if (system) {
+                system.running = false;
+                stopAnimation();
+                initializeSystem();
+                document.getElementById('run-btn').textContent = '▶️ Start';
+            }
+        }
+
+        function seedObjects() {
+            if (system) {
+                system.seedInitialObjects();
+                system.render();
+            }
+        }
+
+        function injectPhase(phase) {
+            if (system) {
+                system.injectPhase(phase);
+            }
+        }
+
+        function injectBallastMass(amount) {
+            if (system) {
+                // Inject ballast mass into random regions
+                const injectionPoints = Math.floor(amount / 2) + 1;
+
+                for (let i = 0; i < injectionPoints; i++) {
+                    const x = Math.floor(Math.random() * system.gridSize);
+                    const y = Math.floor(Math.random() * system.gridSize);
+
+                    // Create a concentrated ballast field
+                    system.createResidualBallastField(x, y, amount / injectionPoints);
+
+                    // Also boost existing objects in the region
+                    for (const [id, object] of system.objects) {
+                        const distance = Math.sqrt(
+                            Math.pow(object.centerX - x, 2) +
+                            Math.pow(object.centerY - y, 2)
+                        );
+
+                        if (distance < 5) {
+                            object.stabilityMass += amount * 0.1 * (1 - distance / 5);
+                            object.conservedEnergy += amount * 0.05 * (1 - distance / 5);
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateGridSize() {
+            const size = parseInt(document.getElementById('grid-size').value);
+            if (system) {
+                system.setGridSize(size);
+            }
+        }
+
+        function updateStabilityThreshold() {
+            const threshold = parseFloat(document.getElementById('stability-threshold').value);
+            if (system) {
+                system.setStabilityThreshold(threshold);
+            }
+        }
+
+        function updateSobelSensitivity() {
+            const sensitivity = parseInt(document.getElementById('sobel-sensitivity').value);
+            if (system) {
+                system.setSobelSensitivity(sensitivity);
+            }
+        }
+
+        function updateConservationFactor() {
+            const factor = parseFloat(document.getElementById('conservation-factor').value);
+            if (system) {
+                system.ballastSystem.conservationFactor = factor;
+            }
+        }
+
+        function updateBallastAttraction() {
+            const attraction = parseFloat(document.getElementById('ballast-attraction').value);
+            if (system) {
+                system.ballastSystem.globalAttraction = attraction;
+            }
+        }
+
+        function setRenderMode(mode) {
+            if (system) {
+                system.renderMode = mode;
+                system.render();
+
+                // Update button states
+                document.getElementById('wireframe-btn').classList.toggle('active', mode === 'wireframe');
+                document.getElementById('filled-btn').classList.toggle('active', mode === 'filled');
+                document.getElementById('gradient-btn').classList.toggle('active', mode === 'gradient');
+            }
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            initializeSystem();
+            system.render();
+        };
+    </script>
+</body>
+</html>
