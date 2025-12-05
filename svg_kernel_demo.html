@@ -9,10 +9,15 @@
             color: #e0e0e0;
             margin: 20px;
         }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .main-display {
+            grid-column: 1 / -1;
         }
         .panel {
             background: #1a1a1a;
@@ -21,21 +26,21 @@
             border-radius: 8px;
         }
         .kernel-display {
-            width: 300px;
-            height: 300px;
+            width: 100%;
+            height: 400px;
             background: #000;
             border: 1px solid #444;
-            display: inline-block;
         }
         .lattice-viz {
-            width: 256px;
+            width: 100%;
             height: 256px;
             background: #000;
             border: 1px solid #444;
             image-rendering: pixelated;
         }
         .controls {
-            margin: 10px 0;
+            margin: 20px 0;
+            text-align: center;
         }
         button {
             background: #2a2a2a;
@@ -53,51 +58,31 @@
             font-size: 12px;
             color: #888;
             margin-top: 10px;
+            text-align: center;
         }
-        .kernel-xml {
-            background: #0f0f0f;
-            border: 1px solid #333;
-            padding: 10px;
-            font-size: 11px;
-            white-space: pre-wrap;
-            max-height: 200px;
-            overflow-y: auto;
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>SVG Kernel Mirror: Self-Reflective Pattern Recognition</h1>
-    <p>The kernel defines itself, discretizes into a lattice, evolves via FEG operators, and reflects back as SVG.</p>
+    <h1>SVG Kernel Mirror</h1>
 
-    <div class="container">
-        <div class="panel">
-            <h3>Kernel Definition</h3>
-            <div class="kernel-xml" id="kernel-xml"></div>
+    <div class="main-container">
+        <div class="panel main-display">
+            <h3>Live SVG</h3>
+            <div class="kernel-display" id="reflected-svg"></div>
         </div>
 
         <div class="panel">
-            <h3>Original SVG Kernel</h3>
-            <div class="kernel-display" id="original-kernel"></div>
-        </div>
-
-        <div class="panel">
-            <h3>Discretized Lattice</h3>
-            <canvas class="lattice-viz" id="discrete-lattice" width="256" height="256"></canvas>
-        </div>
-
-        <div class="panel">
-            <h3>Evolved Lattice (Step 1)</h3>
-            <canvas class="lattice-viz" id="evolved-lattice-1" width="256" height="256"></canvas>
-        </div>
-
-        <div class="panel">
-            <h3>Evolved Lattice (Step 2)</h3>
+            <h3>Lattice</h3>
             <canvas class="lattice-viz" id="evolved-lattice-2" width="256" height="256"></canvas>
         </div>
 
         <div class="panel">
-            <h3>Vectorized Back to SVG</h3>
-            <div class="kernel-display" id="reflected-svg"></div>
+            <h3>Original</h3>
+            <div class="kernel-display" id="original-kernel"></div>
         </div>
     </div>
 
@@ -108,6 +93,7 @@
         <button onclick="evolveMultiple(5)">Evolve 5 Steps</button>
         <button onclick="vectorizeBack()">Vectorize to SVG</button>
         <button onclick="runFullCycle()">Run Full Cycle</button>
+        <button id="live-update-btn" onclick="toggleLiveUpdate()">Start Live Update</button>
         <button onclick="resetSystem()">Reset</button>
     </div>
 
@@ -117,6 +103,10 @@
     <script>
         let kernelSystem;
         let currentKernelId = 'spiral';
+        let liveUpdateActive = false;
+        let animationFrameId = null;
+        let lastUpdateTime = 0;
+        const updateInterval = 50;
 
         // Sample kernel definitions
         const kernelDefinitions = {
@@ -166,10 +156,7 @@
 
             // Parse kernel
             const kernels = kernelSystem.parseKernel(kernelDefinitions.spiral);
-            updateStatus(`Initialized kernel: ${kernels[0].id}`);
-
-            // Display kernel XML
-            document.getElementById('kernel-xml').textContent = kernelDefinitions.spiral;
+            updateStatus(`Initialized: ${kernels[0].id}`);
 
             // Display original SVG
             displayOriginalKernel();
@@ -177,20 +164,21 @@
 
         function displayOriginalKernel() {
             const container = document.getElementById('original-kernel');
-            container.innerHTML = kernelDefinitions.spiral.replace('<kernel', '<svg').replace('</kernel>', '</svg>');
+            const svgContent = kernelDefinitions.spiral.replace('<kernel', '<svg').replace('</kernel>', '</svg>');
+            container.innerHTML = svgContent.replace('width="256"', 'width="100%"').replace('height="256"', 'height="100%"');
         }
 
         function discretizeKernel() {
             if (!kernelSystem) {
-                updateStatus("Initialize system first!");
+                updateStatus("Initialize first");
                 return;
             }
 
             kernelSystem.discretizeKernel(kernelSystem.kernels.get(currentKernelId));
-            updateStatus("Kernel discretized to lattice");
-
-            // Visualize lattice
-            visualizeLattice('discrete-lattice', kernelSystem.kernels.get(currentKernelId).lattice);
+            updateStatus("Discretized");
+            const kernel = kernelSystem.kernels.get(currentKernelId);
+            visualizeLattice('evolved-lattice-2', kernel.lattice);
+            updateSVGDisplay();
         }
 
         function evolveStep() {
@@ -198,18 +186,9 @@
 
             const evolved = kernelSystem.evolveLattice(currentKernelId);
             if (evolved) {
-                updateStatus("Lattice evolved one step");
-
-                // Visualize evolved lattice
-                const targetId = document.getElementById('evolved-lattice-1').style.display !== 'none' ?
-                    'evolved-lattice-2' : 'evolved-lattice-1';
-
-                visualizeLattice(targetId, evolved);
-
-                // Hide the other one for alternating display
-                const otherId = targetId === 'evolved-lattice-1' ? 'evolved-lattice-2' : 'evolved-lattice-1';
-                document.getElementById(otherId).style.display = 'none';
-                document.getElementById(targetId).style.display = 'block';
+                updateStatus("Evolved");
+                visualizeLattice('evolved-lattice-2', evolved);
+                updateSVGDisplay();
             }
         }
 
@@ -220,12 +199,9 @@
                 kernelSystem.evolveLattice(currentKernelId);
             }
             updateStatus(`Evolved ${steps} steps`);
-
-            // Show final result
             const kernel = kernelSystem.kernels.get(currentKernelId);
             visualizeLattice('evolved-lattice-2', kernel.lattice);
-            document.getElementById('evolved-lattice-1').style.display = 'none';
-            document.getElementById('evolved-lattice-2').style.display = 'block';
+            updateSVGDisplay();
         }
 
         function vectorizeBack() {
@@ -236,6 +212,68 @@
                 document.getElementById('reflected-svg').innerHTML = svgString;
                 updateStatus("Lattice vectorized back to SVG");
             }
+        }
+
+        function updateSVGDisplay() {
+            if (!kernelSystem) return;
+
+            const kernel = kernelSystem.kernels.get(currentKernelId);
+            if (!kernel || !kernel.lattice) return;
+
+            const svgString = kernelSystem.latticeToSVG(currentKernelId);
+            if (svgString) {
+                const scaledSvg = svgString.replace('width="256"', 'width="100%"').replace('height="256"', 'height="100%"');
+                document.getElementById('reflected-svg').innerHTML = scaledSvg;
+            }
+        }
+
+        function toggleLiveUpdate() {
+            if (!kernelSystem) {
+                updateStatus("Initialize and discretize kernel first!");
+                return;
+            }
+
+            const kernel = kernelSystem.kernels.get(currentKernelId);
+            if (!kernel || !kernel.lattice) {
+                updateStatus("Discretize kernel first!");
+                return;
+            }
+
+            liveUpdateActive = !liveUpdateActive;
+            const btn = document.getElementById('live-update-btn');
+            
+            if (liveUpdateActive) {
+                btn.textContent = 'Stop Live Update';
+                btn.style.background = '#4a2a2a';
+                lastUpdateTime = performance.now();
+                animationFrameId = requestAnimationFrame(liveUpdateLoop);
+                updateStatus("Live update active");
+            } else {
+                btn.textContent = 'Start Live Update';
+                btn.style.background = '#2a2a2a';
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                updateStatus("Live update stopped");
+            }
+        }
+
+        function liveUpdateLoop(currentTime) {
+            if (!liveUpdateActive || !kernelSystem) {
+                return;
+            }
+
+            if (currentTime - lastUpdateTime >= updateInterval) {
+                const kernel = kernelSystem.kernels.get(currentKernelId);
+                if (kernel && kernel.lattice) {
+                    kernelSystem.evolveLattice(currentKernelId);
+                    updateSVGDisplay();
+                    lastUpdateTime = currentTime;
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(liveUpdateLoop);
         }
 
         function runFullCycle() {
@@ -253,11 +291,13 @@
         }
 
         function resetSystem() {
+            if (liveUpdateActive) {
+                toggleLiveUpdate();
+            }
             kernelSystem = null;
-            document.getElementById('kernel-xml').textContent = '';
             document.getElementById('original-kernel').innerHTML = '';
             clearCanvases();
-            updateStatus("System reset");
+            updateStatus("Reset");
         }
 
         function visualizeLattice(canvasId, lattice) {
@@ -278,12 +318,11 @@
         }
 
         function clearCanvases() {
-            const canvases = document.querySelectorAll('.lattice-viz');
-            canvases.forEach(canvas => {
+            const canvas = document.getElementById('evolved-lattice-2');
+            if (canvas) {
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
-
+            }
             document.getElementById('reflected-svg').innerHTML = '';
         }
 
@@ -293,7 +332,7 @@
 
         // Initialize on load
         window.onload = () => {
-            updateStatus("System ready. Click 'Initialize Kernel' to begin.");
+            updateStatus("Ready");
         };
     </script>
 </body>
