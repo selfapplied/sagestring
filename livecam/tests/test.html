@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Livecam Test</title>
+    <style>
+        body { font-family: monospace; background: #000; color: #0f0; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #0f0; }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>Livecam System Test</h1>
+    <div id="results"></div>
+
+    <script src="../svg_parser.js"></script>
+    <script src="../lattice.js"></script>
+    <script src="../convolution.js"></script>
+    <script src="../sobel.js"></script>
+    <script src="../renderer.js"></script>
+    <script src="../video.js"></script>
+    <script src="../spacetime_scale.js"></script>
+    <script src="../edge_tracker.js"></script>
+    <script src="../liveCam.js"></script>
+    <script src="../vision.js"></script>
+    
+    <script>
+        const results = document.getElementById('results');
+        let passCount = 0;
+        let failCount = 0;
+
+        function test(name, fn) {
+            try {
+                const result = fn();
+                if (result) {
+                    results.innerHTML += `<div class="test pass">✓ ${name}</div>`;
+                    passCount++;
+                } else {
+                    results.innerHTML += `<div class="test fail">✗ ${name} - returned false</div>`;
+                    failCount++;
+                }
+            } catch (e) {
+                results.innerHTML += `<div class="test fail">✗ ${name} - ${e.message}</div>`;
+                console.error(name, e);
+                failCount++;
+            }
+        }
+
+        // Test 1: Classes exist
+        test('Sobel class exists', () => typeof Sobel !== 'undefined');
+        test('VideoCapture class exists', () => typeof VideoCapture !== 'undefined');
+        test('Vision class exists', () => typeof Vision !== 'undefined');
+        test('LatticeRenderer class exists', () => typeof LatticeRenderer !== 'undefined');
+        test('SVGKernelSystem class exists', () => typeof SVGKernelSystem !== 'undefined');
+        test('Convolution class exists', () => typeof Convolution !== 'undefined');
+
+        // Test 2: Sobel computation
+        test('Sobel computes edges', () => {
+            const sobel = new Sobel();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            // Create a simple edge (vertical line)
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    lattice[y * size + x] = x < size/2 ? 0 : 1;
+                }
+            }
+            const edges = sobel.compute(lattice, size);
+            return edges && edges.magnitude && edges.direction && 
+                   edges.magnitude.length === size * size;
+        });
+
+        // Test 3: Path extraction
+        test('Renderer extracts paths', () => {
+            const renderer = new LatticeRenderer();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            // Create a simple shape
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x - size/2;
+                    const dy = y - size/2;
+                    lattice[y * size + x] = (dx*dx + dy*dy < 100) ? 1 : 0;
+                }
+            }
+            const paths = renderer.extractPaths(lattice, size, 0.5);
+            return Array.isArray(paths) && paths.length > 0;
+        });
+
+        // Test 4: Edge path extraction
+        test('Renderer extracts edge paths', () => {
+            const renderer = new LatticeRenderer();
+            const sobel = new Sobel();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    lattice[y * size + x] = x < size/2 ? 0 : 1;
+                }
+            }
+            const edges = sobel.compute(lattice, size);
+            const paths = renderer.extractEdgePaths(edges, size, 0.3);
+            return Array.isArray(paths);
+        });
+
+        // Test 5: SVG rendering
+        test('Renderer generates SVG', () => {
+            const renderer = new LatticeRenderer();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    lattice[y * size + x] = (x + y) % 2;
+                }
+            }
+            const svg = renderer.render(lattice, size);
+            return svg && svg.includes('<svg') && svg.includes('</svg>');
+        });
+
+        // Test 6: Full pipeline
+        test('Full pipeline: lattice -> sobel -> paths -> SVG', () => {
+            const sobel = new Sobel();
+            const renderer = new LatticeRenderer();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    lattice[y * size + x] = x < size/2 ? 0 : 1;
+                }
+            }
+            const edges = sobel.compute(lattice, size);
+            const svg = renderer.render(lattice, size, { edges });
+            return svg && svg.includes('<svg') && svg.includes('<path');
+        });
+
+        // Test 7: SVGKernelSystem integration
+        test('SVGKernelSystem renders kernel with edges', () => {
+            const system = new SVGKernelSystem();
+            const sobel = new Sobel();
+            const size = 64;
+            const lattice = new Float32Array(size * size);
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    lattice[y * size + x] = (x + y) % 2;
+                }
+            }
+            const edges = sobel.compute(lattice, size);
+            const kernel = { id: 'test', lattice, edges };
+            const svg = system.renderKernelToSVG(kernel);
+            return svg && svg.includes('<svg');
+        });
+
+        // Summary
+        setTimeout(() => {
+            results.innerHTML += `<div class="test"><strong>Results: ${passCount} passed, ${failCount} failed</strong></div>`;
+        }, 100);
+    </script>
+</body>
+</html>
+

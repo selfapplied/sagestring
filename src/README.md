@@ -6,7 +6,7 @@ Minimal library for fractal Sobel edge detection with spacetime-scale action fun
 
 ```
 src/
-  sagestring.js        # ES6 module entry point
+  sageString.js        # ES6 module entry point
   
   math/                # Pure computation (Node.js compatible)
     core.js            # Core primitives (WaveScheduler)
@@ -39,7 +39,7 @@ Modern browsers support ES6 modules natively:
 
 ```html
 <script type="module">
-  import { Sobel, LatticeRenderer, SVGKernelSystem } from './src/sagestring.js';
+  import { Sobel, LatticeRenderer, SVGKernelSystem } from './src/sageString.js';
   
   const sobel = new Sobel();
   const renderer = new LatticeRenderer();
@@ -50,7 +50,7 @@ Modern browsers support ES6 modules natively:
 Or in a separate JavaScript file:
 
 ```javascript
-import { Sobel, LatticeRenderer } from './src/sagestring.js';
+import { Sobel, LatticeRenderer } from './src/sageString.js';
 ```
 
 ### Individual Modules
