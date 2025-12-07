@@ -17,7 +17,7 @@ Open `sobel.html` in a browser.
 
 - `sobel.html` - Main demo
 - `core.js` - System library
-- `readme.md` - This file
+- `readMe.md` - This file
 
 ---
 

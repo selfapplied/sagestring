@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tower</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        .header p {
+            font-size: 14px;
+            color: #888;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .main-panel {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+        .ce-layers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .ce-layer {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+        .ce-layer.ce1 {
+            border-color: #4ecdc4;
+        }
+        .ce-layer.ce2 {
+            border-color: #45b7d1;
+        }
+        .ce-layer.ce3 {
+            border-color: #f9ca24;
+        }
+        .layer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .layer-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .ce1 .layer-title { color: #4ecdc4; }
+        .ce2 .layer-title { color: #45b7d1; }
+        .ce3 .layer-title { color: #f9ca24; }
+        .layer-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #0f0f0f;
+        }
+        .status-active { background: #2a5a2a; color: #4ecdc4; }
+        .status-evolution { background: #5a4a2a; color: #f9ca24; }
+        .viz-container {
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .viz-container canvas {
+            width: 100%;
+            height: 200px;
+            display: block;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+        .metric {
+            background: #0f0f0f;
+            padding: 6px;
+            border-radius: 4px;
+        }
+        .metric-label {
+            color: #888;
+            font-size: 10px;
+        }
+        .metric-value {
+            color: #4ecdc4;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .panel h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #4ecdc4;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        .controls {
+            display: grid;
+            gap: 15px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: #888;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .control-value {
+            font-size: 11px;
+            color: #4ecdc4;
+            text-align: right;
+        }
+        button {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #3a3a3a;
+            border-color: #4ecdc4;
+        }
+        button:active {
+            background: #4a4a4a;
+        }
+        button.primary {
+            background: #4ecdc4;
+            color: #0a0a0a;
+            border-color: #4ecdc4;
+        }
+        button.primary:hover {
+            background: #5eddd4;
+        }
+        .invariants-display {
+            font-size: 11px;
+            line-height: 1.6;
+        }
+        .invariant-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: #0f0f0f;
+            border-radius: 4px;
+            border-left: 3px solid #4ecdc4;
+        }
+        .invariant-name {
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        .invariant-value {
+            color: #888;
+            font-family: 'Courier New', monospace;
+        }
+        .guardian-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .guardian {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        .guardian.phi { border-color: #ff6b6b; }
+        .guardian.partial { border-color: #4ecdc4; }
+        .guardian.scriptr { border-color: #f9ca24; }
+        .guardian-name {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .guardian-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .guardian.phi .guardian-value { color: #ff6b6b; }
+        .guardian.partial .guardian-value { color: #4ecdc4; }
+        .guardian.scriptr .guardian-value { color: #f9ca24; }
+        .paper-link {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f0f0f;
+            border-radius: 4px;
+            border: 1px solid #4ecdc4;
+            text-align: center;
+        }
+        .paper-link a {
+            color: #4ecdc4;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .paper-link a:hover {
+            text-decoration: underline;
+        }
+        .evolution-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px;
+            border-left: 2px solid #333;
+            padding-left: 8px;
+        }
+        .log-entry.error-lift {
+            border-left-color: #f9ca24;
+            color: #f9ca24;
+        }
+        .log-entry.guardian {
+            border-left-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+        .log-entry.evolution {
+            border-left-color: #45b7d1;
+            color: #45b7d1;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        .upload-hint {
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+            font-style: italic;
+        }
+        .video-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f0f0f;
+            border-radius: 4px;
+            border: 1px solid #4ecdc4;
+        }
+        .video-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .video-btn {
+            padding: 8px 16px;
+            background: #1a1a2e;
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .video-btn:hover {
+            background: #4ecdc4;
+            color: #0a0a0a;
+        }
+        .video-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .video-btn.active {
+            background: #4ecdc4;
+            color: #0a0a0a;
+        }
+        .video-container {
+            position: relative;
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .video-container video {
+            width: 100%;
+            display: block;
+        }
+        .video-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .video-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        .video-stat {
+            background: #0f0f0f;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .video-stat-label {
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .video-stat-value {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Live Sobel SVG</h1>
+    </div>
+
+    <div class="container" style="grid-template-columns: 1fr 1fr; max-width: 1400px;">
+            <div class="panel">
+            <h3>Camera</h3>
+            <div class="video-controls" style="margin-bottom: 10px;">
+                        <button class="video-btn" id="start-video-btn" onclick="startVideoCapture()">🎥 Start Camera</button>
+                <button class="video-btn" id="stop-video-btn" onclick="stopVideoCapture()" disabled>⏹️ Stop</button>
+                    </div>
+                    <div class="video-container" id="video-container" style="display: none;">
+                        <video id="video-element" autoplay muted playsinline></video>
+                        <canvas id="video-overlay"></canvas>
+                    </div>
+            <div class="video-stats" id="video-stats" style="display: none; margin-top: 10px;">
+                        <div class="video-stat">
+                            <div class="video-stat-label">FPS</div>
+                            <div class="video-stat-value" id="video-fps">0</div>
+                        </div>
+                </div>
+            </div>
+
+            <div class="panel">
+            <h3>Live SVG</h3>
+            <div class="viz-container" id="ce1-svg-container" style="min-height: 400px; background: #000; border: 1px solid #4ecdc4; border-radius: 4px; padding: 10px;">
+                <div id="ce1-svg-display" style="width: 100%; height: 400px; overflow: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../core/wave_scheduler.js"></script>
+    <script src="svg_kernel_system.js"></script>
+    <script src="svg_kernel_cv_system.js"></script>
+    <script>
+        // Tower
+        let kernelSystem;
+        let cvSystem = null;
+        let isInitialized = false;
+        let currentKernels = [];
+        let antclock = 0;
+        let errorLiftCount = 0;
+        let expressivity = 1.0;
+        let kappa = 0.35;
+        
+        // Video processing state
+        let videoStream = null;
+        let videoElement = null;
+        let videoOverlay = null;
+        let isVideoProcessing = false;
+        let videoKernel = null; // Kernel created from video frames
+        let frameCounter = 0;
+        let showSVG = false; // Toggle for SVG display
+        let lastFrameTime = 0;
+        let frameTimeHistory = [];
+        let lastVideoTime = -1; // Track video currentTime to detect new frames
+
+        // Guardian values
+        let guardianPhi = 0.85;
+        let guardianPartial = 0.92;
+        let guardianScriptR = 0.88;
+
+        // Canvas contexts (removed - not needed)
+
+        function initializeCETower() {
+            kernelSystem = new SVGKernelSystem();
+            isInitialized = true;
+            antclock = 0;
+        }
+
+
+
+        /**
+         * Evolve lattice with edge-preserving dynamics
+         * Edges guide evolution: strong edges are preserved, weak edges can be refined
+         */
+        function evolveLatticeWithEdgePreservation(kernel) {
+            if (!kernel || !kernel.lattice) return kernel?.lattice || null;
+            const size = Math.sqrt(kernel.lattice.length);
+            const currentLattice = kernel.lattice;
+            const newLattice = new Float32Array(size * size);
+            const edges = kernel.edges;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const idx = y * size + x;
+
+                    // Standard FEG evolution using kernelSystem methods
+                    const match = kernelSystem.computeKernelMatch(kernel, currentLattice, x, y, size);
+                    const coupling = kernelSystem.computeCouplingSum(kernel, currentLattice, x, y, size);
+                    const evolved = kernel.energy * Math.pow(match + coupling, kernel.power);
+
+                    // Edge-preserving modification
+                    let edgePreserved = evolved;
+                    if (edges && edges.magnitude[idx] > 0.15) {
+                        // Strong edge: preserve boundary by maintaining contrast
+                        const edgeStrength = edges.magnitude[idx];
+                        const neighbors = getNeighborValues(currentLattice, x, y, size);
+                        const avgNeighbor = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+                        
+                        // Preserve edge by maintaining difference from neighbors
+                        const edgeContrast = Math.abs(currentLattice[idx] - avgNeighbor);
+                        edgePreserved = avgNeighbor + (currentLattice[idx] > avgNeighbor ? 1 : -1) * 
+                                       Math.max(edgeContrast * 0.7, edgeStrength * 0.3);
+                    } else if (edges && edges.magnitude[idx] < 0.05) {
+                        // Smooth region: allow more evolution
+                        edgePreserved = evolved;
+                    } else {
+                        // Medium edge: blend evolution with preservation
+                        const edgeStrength = edges.magnitude[idx];
+                        edgePreserved = evolved * (1 - edgeStrength * 0.3) + currentLattice[idx] * (edgeStrength * 0.3);
+                    }
+
+                    newLattice[idx] = Math.max(0, Math.min(1, edgePreserved));
+                }
+            }
+
+            // Update kernel lattice
+            kernel.lattice = newLattice;
+            kernelSystem.lattices.set(kernel.id, newLattice);
+        }
+
+        /**
+         * Get neighbor values for edge preservation
+         */
+        function getNeighborValues(lattice, x, y, size) {
+            const neighbors = [];
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = (x + dx + size) % size;
+                    const ny = (y + dy + size) % size;
+                    neighbors.push(lattice[ny * size + nx]);
+                }
+            }
+            return neighbors;
+        }
+
+        /**
+         * Refine edges based on evolution changes using fractal Sobel
+         * Strong edges that persist across scales and time are reinforced
+         * Transient edges are weakened
+         */
+        function refineEdges(kernel) {
+            if (!kernel.edges || kernel.edgeHistory.length < 2) return;
+
+            const size = Math.sqrt(kernel.lattice.length);
+            const currentEdges = kernel.edges;
+            const previousEdges = kernel.edgeHistory[kernel.edgeHistory.length - 2];
+
+            // Temporal edge refinement: edges that persist are reinforced
+            for (let i = 0; i < currentEdges.magnitude.length; i++) {
+                const currentMag = currentEdges.magnitude[i];
+                const previousMag = previousEdges.magnitude[i];
+
+                // If edge persists across steps, reinforce it
+                if (currentMag > 0.1 && previousMag > 0.1) {
+                    // Reinforce persistent edges (fractal structure stabilizes)
+                    currentEdges.magnitude[i] = Math.min(1.0, currentMag * 1.1);
+                } else if (currentMag < 0.05 && previousMag < 0.05) {
+                    // Smooth regions stay smooth
+                    currentEdges.magnitude[i] = currentMag * 0.9;
+                }
+                // Transient edges (appear/disappear) are weakened
+                else if (Math.abs(currentMag - previousMag) > 0.2) {
+                    currentEdges.magnitude[i] = currentMag * 0.8;
+                }
+            }
+
+            // Recompute self-referential fractal Sobel edges from evolved lattice
+            // This continues the perceptual feedback loop
+            // Pass antclock for drift correction and previous result for convergence checking
+            const refinedEdges = computeFractalSobelGradients(
+                kernel.lattice, 
+                size, 
+                kernel.kernelFamily,
+                kernel.kernelIteration,
+                antclock, // Antclock timing for drift correction
+                kernel.edges // Previous result for convergence checking
+            );
+            
+            // Update kernel family if available
+            if (refinedEdges.updatedKernels) {
+                kernel.kernelFamily = refinedEdges.updatedKernels;
+            }
+            
+            // Blend: 70% refined (new fractal structure), 30% persistent (old)
+            // This maintains fractal coherence while adapting to evolution
+            for (let i = 0; i < currentEdges.magnitude.length; i++) {
+                currentEdges.magnitude[i] = refinedEdges.magnitude[i] * 0.7 + currentEdges.magnitude[i] * 0.3;
+                currentEdges.direction[i] = refinedEdges.direction[i];
+            }
+            
+            // Update energy metrics
+            currentEdges.totalEnergy = refinedEdges.totalEnergy;
+            currentEdges.baseEnergy = refinedEdges.baseEnergy;
+        }
+
+        /**
+         * Base Sobel kernels (normalized as invariant "unit directions")
+         * Classical 3x3 Sobel operators normalized to act as scale-1 generators
+         * K_x(1), K_y(1) - the base seeds for fractal recursion
+         */
+        function getBaseSobelKernels() {
+            // Sobel X kernel (horizontal gradient)
+            // [-1  0  1]
+            // [-2  0  2]
+            // [-1  0  1]
+            const sobelX = [
+                -1, 0, 1,
+                -2, 0, 2,
+                -1, 0, 1
+            ];
+            
+            // Sobel Y kernel (vertical gradient)
+            // [-1 -2 -1]
+            // [ 0  0  0]
+            // [ 1  2  1]
+            const sobelY = [
+                -1, -2, -1,
+                 0,  0,  0,
+                 1,  2,  1
+            ];
+            
+            // Normalize to unit L¹ norm (sum of absolute values = 1)
+            // This makes them invariant "unit directions" for recursion
+            const normalize = (kernel) => {
+                const sum = kernel.reduce((s, v) => s + Math.abs(v), 0);
+                return kernel.map(v => v / sum);
+            };
+            
+            return {
+                gx: normalize(sobelX),
+                gy: normalize(sobelY),
+                size: 3,
+                scale: 1 // Base scale-1 generator
+            };
+        }
+
+        /**
+         * Fractal Dilation Rule: D_s expands kernel to scale s
+         * Preserves original orientation field without flattening contrast
+         * Uses harmonic interpolation for smooth orientation across scales
+         * 
+         * K(s) = D_s(K(1)) - self-power operator
+         */
+        function dilateKernel(kernel, scale) {
+            if (scale === 1) {
+                return {
+                    gx: new Float32Array(kernel.gx),
+                    gy: new Float32Array(kernel.gy),
+                    size: kernel.size,
+                    scale: 1
+                };
+            }
+            
+            const oldSize = kernel.size;
+            // New size: scale the kernel proportionally
+            // For scale s, kernel becomes (2s+1) × (2s+1) to maintain structure
+            const newSize = 2 * scale + 1;
+            const dilatedX = new Float32Array(newSize * newSize);
+            const dilatedY = new Float32Array(newSize * newSize);
+            
+            const center = Math.floor(newSize / 2);
+            const oldCenter = Math.floor(oldSize / 2);
+            
+            // Harmonic interpolation: preserves orientation field smoothly
+            for (let y = 0; y < newSize; y++) {
+                for (let x = 0; x < newSize; x++) {
+                    const idx = y * newSize + x;
+                    
+                    // Map to original kernel space with scaling
+                    const dx = (x - center) / scale;
+                    const dy = (y - center) / scale;
+                    const ox = dx + oldCenter;
+                    const oy = dy + oldCenter;
+                    
+                    // Harmonic interpolation (smooth, orientation-preserving)
+                    if (ox >= 0 && ox < oldSize && oy >= 0 && oy < oldSize) {
+                        // Direct mapping
+                        const oidx = Math.floor(oy) * oldSize + Math.floor(ox);
+                        dilatedX[idx] = kernel.gx[oidx];
+                        dilatedY[idx] = kernel.gy[oidx];
+                    } else {
+                        // Harmonic extension: use distance-weighted interpolation
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const angle = Math.atan2(dy, dx);
+                        
+                        // Project to nearest valid kernel position
+                        const nearestX = Math.max(0, Math.min(oldSize - 1, Math.round(ox)));
+                        const nearestY = Math.max(0, Math.min(oldSize - 1, Math.round(oy)));
+                        const nidx = nearestY * oldSize + nearestX;
+                        
+                        // Harmonic decay: preserve orientation, attenuate magnitude
+                        const harmonicFactor = 1.0 / (1.0 + dist * 0.5);
+                        dilatedX[idx] = kernel.gx[nidx] * harmonicFactor;
+                        dilatedY[idx] = kernel.gy[nidx] * harmonicFactor;
+                    }
+                }
+            }
+            
+            return {
+                gx: dilatedX,
+                gy: dilatedY,
+                size: newSize,
+                scale: scale
+            };
+        }
+
+        /**
+         * Apply kernel to lattice at position
+         */
+        function applyKernel(lattice, size, kernel, x, y) {
+            const kSize = kernel.size;
+            const halfK = Math.floor(kSize / 2);
+            let gx = 0, gy = 0;
+            
+            for (let ky = 0; ky < kSize; ky++) {
+                for (let kx = 0; kx < kSize; kx++) {
+                    const lx = (x + kx - halfK + size) % size; // Wrap boundary
+                    const ly = (y + ky - halfK + size) % size;
+                    const lidx = ly * size + lx;
+                    const kidx = ky * kSize + kx;
+                    
+                    gx += lattice[lidx] * kernel.gx[kidx];
+                    gy += lattice[lidx] * kernel.gy[kidx];
+                }
+            }
+            
+            return {gx, gy};
+        }
+
+        /**
+         * Self-Referential Fractal Sobel Edge Detection
+         * 
+         * A perceptual bootloader: edges reshape kernels, kernels reshape edges.
+         * The detector becomes a living creature tracing its own silhouette.
+         * 
+         * CE1 Territory: witness feeds memory, memory feeds morphism, morphism feeds domain.
+         * 
+         * Properties:
+         * 1. Base seeds: K_x(1), K_y(1) as scale-1 generators
+         * 2. Fractal dilation: K(s) = D_s(K(1)) with harmonic interpolation
+         * 3. Recursive gradient family: E_s = sqrt((I*K_x(s))² + (I*K_y(s))²)
+         * 4. Self-referential feedback: K(s,t+1) = U(K(s,t), E_s(t))
+         * 5. Cross-scale coherence: C_s = E_s · E_{s/2}
+         * 6. Chaos-informed stabilization: logistic map near Feigenbaum point
+         * 7. Fixed-point convergence: kernels evolve to coherent internal model
+         */
+        /**
+         * Compute antclock rate R(x) for drift correction
+         * Paper Section 3.2.5: R(x) = χ_FEG · κ_d(x) · (1 + Q_9/11(x))
+         */
+        function computeAntclockRate(lattice, size, x, y) {
+            const chiFEG = 0.638; // Transform quality measure
+            const idx = y * size + x;
+            const value = lattice[idx];
+            
+            // Digit count approximation (simplified)
+            const digitCount = Math.floor(value * 10);
+            const curvature = computePascalCurvature(digitCount);
+            
+            // Q_9/11 modular correction (simplified)
+            const qMod = (digitCount % 11) / 11;
+            
+            return chiFEG * curvature * (1 + qMod);
+        }
+
+        /**
+         * Compute Pascal curvature κ_n for digit shell
+         */
+        function computePascalCurvature(n) {
+            if (n < 2) return 0.1;
+            // Simplified: r_n = log(binomial(n, floor(n/2)))
+            // κ_n = r_{n+1} - 2r_n + r_{n-1}
+            const r_n = Math.log(Math.max(1, binomial(n, Math.floor(n/2))));
+            const r_np1 = Math.log(Math.max(1, binomial(n+1, Math.floor((n+1)/2))));
+            const r_nm1 = Math.log(Math.max(1, binomial(n-1, Math.floor((n-1)/2))));
+            return Math.abs(r_np1 - 2*r_n + r_nm1);
+        }
+
+        /**
+         * Binomial coefficient (simplified)
+         */
+        function binomial(n, k) {
+            if (k > n - k) k = n - k;
+            let result = 1;
+            for (let i = 0; i < k; i++) {
+                result = result * (n - i) / (i + 1);
+            }
+            return result;
+        }
+
+        function computeFractalSobelGradients(lattice, size, previousKernels = null, iteration = 0, antclockTime = 0, previousResult = null) {
+            // Use previous kernels if available (self-referential evolution)
+            // Otherwise start with base kernels
+            let kernelFamily = previousKernels;
+            if (!kernelFamily) {
+                const baseKernels = getBaseSobelKernels();
+                kernelFamily = {
+                    base: baseKernels,
+                    scales: [1, 2, 4].map(s => ({
+                        scale: s,
+                        kernel: dilateKernel(baseKernels, s),
+                        generation: 0
+                    }))
+                };
+            }
+            
+            // Extract previous magnitude for convergence checking
+            const previousMagnitude = previousResult ? previousResult.magnitude : null;
+            
+            const scales = kernelFamily.scales.map(s => s.scale);
+            
+            // Initialize scale responses
+            const scaleResponses = kernelFamily.scales.map((scaleData, sIdx) => ({
+                scale: scaleData.scale,
+                kernel: scaleData.kernel,
+                generation: scaleData.generation,
+                ex: new Float32Array(size * size), // I * K_x(s)
+                ey: new Float32Array(size * size), // I * K_y(s)
+                es: new Float32Array(size * size)  // E_s = sqrt(ex² + ey²)
+            }));
+            
+            // Step 3: Compute recursive gradient family
+            // E_s = sqrt((I*K_x(s))² + (I*K_y(s))²)
+            for (let sIdx = 0; sIdx < scaleResponses.length; sIdx++) {
+                const response = scaleResponses[sIdx];
+                const kernel = response.kernel;
+                
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const idx = y * size + x;
+                        const {gx, gy} = applyKernel(lattice, size, kernel, x, y);
+                        
+                        response.ex[idx] = gx;
+                        response.ey[idx] = gy;
+                        response.es[idx] = Math.sqrt(gx*gx + gy*gy);
+                    }
+                }
+            }
+            
+            // Step 4: Renormalized aggregation with stability criterion
+            // E = Σ_s w_s E_s where w_s ~ s^(-α) with α tuned by stability
+            // Antclock timing adjusts aggregation to prevent drift
+            
+            // Compute average antclock rate for drift-aware aggregation
+            let avgAntclockRate = 0.638; // Default χ_FEG
+            let rateCount = 0;
+            const sampleStep = Math.max(4, Math.floor(size / 16));
+            for (let y = sampleStep; y < size - sampleStep; y += sampleStep) {
+                for (let x = sampleStep; x < size - sampleStep; x += sampleStep) {
+                    avgAntclockRate += computeAntclockRate(lattice, size, x, y);
+                    rateCount++;
+                }
+            }
+            if (rateCount > 0) avgAntclockRate /= rateCount;
+            
+            // Drift correction: higher antclock rate = faster time = more aggressive renormalization
+            const driftCorrectionFactor = Math.min(1.2, Math.max(0.8, avgAntclockRate / 0.638));
+            
+            let alpha = 1.0; // Initial power law exponent
+            // Adjust base alpha based on antclock rate (faster time = steeper power law)
+            alpha *= (1.0 + 0.1 * (driftCorrectionFactor - 1.0));
+            let weights = scales.map(s => 1.0 / Math.pow(s, alpha));
+            
+            // Stability criterion: tune α to avoid runaway amplification
+            // Compute total energy at each scale
+            const scaleEnergies = scaleResponses.map(r => 
+                r.es.reduce((sum, e) => sum + e, 0)
+            );
+            
+            // Check for energy balance: no single scale should dominate
+            const maxEnergy = Math.max(...scaleEnergies);
+            const minEnergy = Math.min(...scaleEnergies);
+            const energyRatio = maxEnergy / (minEnergy + 1e-6);
+            
+            // Adjust α if energy imbalance detected (stability criterion)
+            // Antclock-aware: faster time = more aggressive correction
+            if (energyRatio > 3.0) {
+                // Increase α to favor smaller scales (more stable)
+                alpha = Math.min(1.5, alpha + 0.1 * driftCorrectionFactor);
+                weights = scales.map(s => 1.0 / Math.pow(s, alpha));
+            } else if (energyRatio < 1.5) {
+                // Decrease α to favor larger scales
+                alpha = Math.max(0.5, alpha - 0.05 * driftCorrectionFactor);
+                weights = scales.map(s => 1.0 / Math.pow(s, alpha));
+            }
+            
+            // Normalize weights to conserve total gradient energy
+            const weightSum = weights.reduce((s, w) => s + w, 0);
+            weights = weights.map(w => w / weightSum);
+            
+            // Step 6: Chaos-informed sharpening
+            // Modulate sharpening using logistic map near Feigenbaum point
+            const feigenbaumMu = 3.56995;
+            const logisticMap = (mu, x) => mu * x * (1 - x);
+            
+            // Initialize chaos state
+            // Antclock timing modulates sharpening intensity (faster time = more aggressive)
+            let chaosState = 0.5;
+            const sharpeningIntensity = 1.0 + 0.2 * (driftCorrectionFactor - 1.0);
+            const sharpeningCoeffs = scales.map((s, idx) => {
+                chaosState = logisticMap(feigenbaumMu / 4, chaosState);
+                // Sharpening coefficient: avoids overshoot, reinforces stable patterns
+                // Modulated by antclock drift correction
+                return 1.0 + sharpeningIntensity * 0.1 * (chaosState - 0.5);
+            });
+            
+            // Aggregate: E = Σ_s w_s E_s (with chaos-informed sharpening)
+            const magnitude = new Float32Array(size * size);
+            const direction = new Float32Array(size * size);
+            let totalEnergy = 0;
+            let baseEnergy = scaleEnergies[0];
+            
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const idx = y * size + x;
+                    
+                    let magSum = 0;
+                    let dirSumX = 0, dirSumY = 0;
+                    
+                    for (let sIdx = 0; sIdx < scaleResponses.length; sIdx++) {
+                        const response = scaleResponses[sIdx];
+                        const w = weights[sIdx];
+                        const sharp = sharpeningCoeffs[sIdx];
+                        
+                        // Weighted, sharpened contribution
+                        const contribution = response.es[idx] * w * sharp;
+                        magSum += contribution;
+                        
+                        // Weighted direction
+                        dirSumX += response.ex[idx] * w;
+                        dirSumY += response.ey[idx] * w;
+                    }
+                    
+                    magnitude[idx] = magSum;
+                    direction[idx] = Math.atan2(dirSumY, dirSumX);
+                    totalEnergy += magSum;
+                }
+            }
+            
+            // Step 5: Cross-scale coupling
+            // C_s = E_s · E_{s/2} (dot product for coherence)
+            for (let sIdx = 1; sIdx < scaleResponses.length; sIdx++) {
+                const curr = scaleResponses[sIdx];
+                const prev = scaleResponses[sIdx - 1]; // E_{s/2} when s is dyadic
+                
+                for (let y = 0; y < size; y++) {
+                    for (let x = 0; x < size; x++) {
+                        const idx = y * size + x;
+                        
+                        // Dot product: C_s = E_s · E_{s/2}
+                        // Reveals ridges, boundaries, filaments, scale-consistent structures
+                        // Antclock timing modulates coupling strength (faster time = stronger coupling)
+                        const crossCoupling = Math.abs(
+                            curr.ex[idx] * prev.ex[idx] + 
+                            curr.ey[idx] * prev.ey[idx]
+                        );
+                        
+                        // Blend cross-coupling into final map with antclock-modulated strength
+                        const couplingStrength = 0.15 * driftCorrectionFactor;
+                        magnitude[idx] += crossCoupling * couplingStrength;
+                    }
+                }
+            }
+            
+            // Step 4 (continued): Renormalization flow
+            // Conserve total gradient energy across scales
+            const totalEnergyRatio = totalEnergy / (baseEnergy + 1e-6);
+            const epsilon = 0.15; // Tolerance for energy conservation
+            
+            if (Math.abs(totalEnergyRatio - 1.0) > epsilon) {
+                // Renormalize to conserve energy (Noether-style invariant)
+                const renormalizeFactor = 1.0 / totalEnergyRatio;
+                for (let i = 0; i < magnitude.length; i++) {
+                    magnitude[i] *= renormalizeFactor;
+                }
+                totalEnergy *= renormalizeFactor;
+            }
+            
+            // Step 7: Fixed-point requirement
+            // Normalize to [0, 1] for stability under iteration
+            // Repeated application should converge to fixed point or short periodic orbit
+            // Antclock timing adjusts convergence threshold (faster time = tighter threshold)
+            let maxMag = 0;
+            for (let i = 0; i < magnitude.length; i++) {
+                if (magnitude[i] > maxMag) maxMag = magnitude[i];
+            }
+            
+            if (maxMag > 0) {
+                // Normalize with stability check
+                // Antclock-aware: faster time = more aggressive normalization
+                const normalizationFactor = 1.0 / maxMag;
+                for (let i = 0; i < magnitude.length; i++) {
+                    magnitude[i] = magnitude[i] * normalizationFactor;
+                }
+            }
+            
+            // Check convergence against previous result (if available)
+            // Antclock-aware convergence threshold
+            const convergenceThreshold = 0.01 / driftCorrectionFactor; // Faster time = tighter threshold
+            let converged = false;
+            let maxChange = 0;
+            if (previousMagnitude) {
+                for (let i = 0; i < magnitude.length; i++) {
+                    const change = Math.abs(magnitude[i] - previousMagnitude[i]);
+                    maxChange = Math.max(maxChange, change);
+                }
+                converged = maxChange < convergenceThreshold;
+            }
+            
+            // Step 4: Self-Referential Feedback Rule
+            // K(s,t+1) = U(K(s,t), E_s(t))
+            // Update kernels based on edges they detect
+            // Use antclock timing for drift correction
+            const updatedKernels = updateKernelsSelfReferentially(
+                kernelFamily,
+                scaleResponses,
+                size,
+                iteration,
+                antclockTime,
+                lattice // Pass lattice for antclock rate computation
+            );
+            
+            return {
+                magnitude,
+                direction,
+                maxMagnitude: maxMag,
+                scaleEnergies: scaleResponses.map(r => r.es),
+                totalEnergy,
+                baseEnergy,
+                alpha, // Stability-tuned exponent
+                weights, // Renormalized weights
+                sharpeningCoeffs, // Chaos-informed coefficients
+                scaleResponses, // Full multi-scale responses for visualization
+                updatedKernels, // Self-referentially evolved kernel family
+                converged: converged || updatedKernels.converged, // Fixed-point convergence status
+                maxChange: maxChange, // Maximum change from previous iteration
+                avgAntclockRate: avgAntclockRate, // Average antclock rate
+                driftCorrectionFactor: driftCorrectionFactor // Drift correction applied
+            };
+        }
+
+        /**
+         * Self-Referential Update Map: U(K(s,t), E_s(t))
+         * 
+         * Updates kernels based on edges they detect:
+         * - Feature Attraction: strengthen directions where edges persist
+         * - Noise Repulsion: weaken directions with incoherent noise
+         * - Energy Invariance: preserve total kernel energy
+         * - Smoothness Constraint: preserve differentiability
+         * - Antclock Drift Correction: adjust for temporal drift using experiential time
+         */
+        function updateKernelsSelfReferentially(kernelFamily, scaleResponses, size, iteration, antclockTime, lattice) {
+            const feigenbaumMu = 3.56995;
+            const epsilon = 0.01; // Convergence threshold
+            const updatedScales = [];
+            let totalKernelChange = 0;
+            let converged = true;
+            
+            // Compute average antclock rate for drift correction
+            // R(x) = χ_FEG · κ_d(x) · (1 + Q_9/11(x))
+            let avgAntclockRate = 0;
+            let rateCount = 0;
+            const sampleStep = Math.max(4, Math.floor(size / 16));
+            for (let y = sampleStep; y < size - sampleStep; y += sampleStep) {
+                for (let x = sampleStep; x < size - sampleStep; x += sampleStep) {
+                    avgAntclockRate += computeAntclockRate(lattice, size, x, y);
+                    rateCount++;
+                }
+            }
+            avgAntclockRate = rateCount > 0 ? avgAntclockRate / rateCount : 0.638; // Default to χ_FEG
+            
+            // Drift correction factor based on antclock timing
+            // Higher antclock rate = faster experiential time = more aggressive drift correction
+            const driftCorrectionFactor = Math.min(1.2, Math.max(0.8, avgAntclockRate / 0.638));
+            
+            for (let sIdx = 0; sIdx < scaleResponses.length; sIdx++) {
+                const response = scaleResponses[sIdx];
+                const oldKernel = response.kernel;
+                const edgeField = response.es;
+                const scale = response.scale;
+                
+                // Compute cross-scale coherence for this scale
+                let crossScaleCoherence = null;
+                if (sIdx > 0) {
+                    const prevResponse = scaleResponses[sIdx - 1];
+                    crossScaleCoherence = new Float32Array(size * size);
+                    for (let i = 0; i < size * size; i++) {
+                        crossScaleCoherence[i] = response.es[i] * prevResponse.es[i];
+                    }
+                }
+                
+                // Chaos-informed update intensity modulated by antclock timing
+                // Antclock adjusts update rate: faster experiential time = more frequent updates
+                const lambda = 0.5 + 0.1 * Math.sin(iteration * 0.1);
+                const baseUpdateIntensity = feigenbaumMu * lambda * (1 - lambda);
+                
+                // Apply antclock drift correction
+                // Higher antclock rate means we're experiencing time faster, so adjust updates accordingly
+                const updateIntensity = baseUpdateIntensity * driftCorrectionFactor;
+                
+                // Create updated kernel
+                const kSize = oldKernel.size;
+                const newKernelX = new Float32Array(oldKernel.gx);
+                const newKernelY = new Float32Array(oldKernel.gy);
+                
+                // Compute original energy BEFORE modifications (for energy invariance)
+                const originalEnergyX = oldKernel.gx.reduce((s, v) => s + Math.abs(v), 0);
+                const originalEnergyY = oldKernel.gy.reduce((s, v) => s + Math.abs(v), 0);
+                
+                let kernelChange = 0;
+                
+                // Update kernel weights based on edge field
+                // Sample edge field comprehensively across the image
+                for (let ky = 0; ky < kSize; ky++) {
+                    for (let kx = 0; kx < kSize; kx++) {
+                        const kidx = ky * kSize + kx;
+                        
+                        // Direction vector of this kernel position
+                        const kxDir = kx - Math.floor(kSize / 2);
+                        const kyDir = ky - Math.floor(kSize / 2);
+                        const kAngle = Math.atan2(kyDir, kxDir);
+                        const kMag = Math.sqrt(kxDir*kxDir + kyDir*kyDir);
+                        
+                        // Sample edge field comprehensively across entire image
+                        // Check edge coherence along this kernel direction at multiple positions
+                        let edgeCoherence = 0;
+                        let edgeCount = 0;
+                        const sampleStep = Math.max(2, Math.floor(size / 20)); // Adaptive sampling
+                        
+                        // Sample at multiple positions across the image
+                        for (let sy = sampleStep; sy < size - sampleStep; sy += sampleStep) {
+                            for (let sx = sampleStep; sx < size - sampleStep; sx += sampleStep) {
+                                // Check edge strength in direction of this kernel element
+                                const edgeValue = edgeField[sy * size + sx];
+                                
+                                // Also check neighbors in the kernel's direction
+                                const dirX = Math.cos(kAngle);
+                                const dirY = Math.sin(kAngle);
+                                const neighborX = Math.floor(sx + dirX * 2);
+                                const neighborY = Math.floor(sy + dirY * 2);
+                                
+                                if (neighborX >= 0 && neighborX < size && neighborY >= 0 && neighborY < size) {
+                                    const neighborEdge = edgeField[neighborY * size + neighborX];
+                                    // Coherence: edges that persist in this direction
+                                    const directionalCoherence = Math.abs(edgeValue - neighborEdge) < 0.1 ? 
+                                        (edgeValue + neighborEdge) / 2 : 0;
+                                    edgeCoherence += directionalCoherence;
+                                    edgeCount++;
+                                }
+                            }
+                        }
+                        
+                        const avgCoherence = edgeCount > 0 ? edgeCoherence / edgeCount : 0;
+                        
+                        // Feature Attraction: increase weights where edges persist
+                        // Modulated by antclock rate at kernel center position
+                        const kernelCenterX = Math.floor(size / 2);
+                        const kernelCenterY = Math.floor(size / 2);
+                        const localAntclockRate = computeAntclockRate(lattice, size, kernelCenterX, kernelCenterY);
+                        const localDriftFactor = Math.min(1.2, Math.max(0.8, localAntclockRate / 0.638));
+                        
+                        const featureAttraction = avgCoherence > 0.2 ? 
+                            1.0 + updateIntensity * 0.2 * localDriftFactor : 1.0;
+                        
+                        // Noise Repulsion: suppress weights with low coherence
+                        // Stronger suppression when antclock rate is high (faster time = more aggressive)
+                        const noiseRepulsion = avgCoherence < 0.1 ? 
+                            1.0 - updateIntensity * 0.1 * localDriftFactor : 1.0;
+                        
+                        // Cross-scale coherence bonus: C_s = E_s · E_{s/2}
+                        let crossScaleBonus = 1.0;
+                        if (crossScaleCoherence && avgCoherence > 0.15) {
+                            // Sample cross-scale coherence in kernel direction
+                            let crossCoherence = 0;
+                            let crossCount = 0;
+                            const sampleStep = Math.max(2, Math.floor(size / 20));
+                            
+                            for (let sy = sampleStep; sy < size - sampleStep; sy += sampleStep) {
+                                for (let sx = sampleStep; sx < size - sampleStep; sx += sampleStep) {
+                                    const dirX = Math.cos(kAngle);
+                                    const dirY = Math.sin(kAngle);
+                                    const neighborX = Math.floor(sx + dirX * 2);
+                                    const neighborY = Math.floor(sy + dirY * 2);
+                                    
+                                    if (neighborX >= 0 && neighborX < size && neighborY >= 0 && neighborY < size) {
+                                        const sidx = sy * size + sx;
+                                        const nidx = neighborY * size + neighborX;
+                                        // Cross-scale dot product: coherence between scales
+                                        crossCoherence += crossScaleCoherence[sidx] * crossScaleCoherence[nidx];
+                                        crossCount++;
+                                    }
+                                }
+                            }
+                            
+                            const crossAvg = crossCount > 0 ? crossCoherence / crossCount : 0;
+                            crossScaleBonus = 1.0 + updateIntensity * 0.15 * Math.min(crossAvg, 1.0);
+                        }
+                        
+                        // Update kernel weights
+                        const oldX = newKernelX[kidx];
+                        const oldY = newKernelY[kidx];
+                        
+                        newKernelX[kidx] *= featureAttraction * noiseRepulsion * crossScaleBonus;
+                        newKernelY[kidx] *= featureAttraction * noiseRepulsion * crossScaleBonus;
+                        
+                        kernelChange += Math.abs(newKernelX[kidx] - oldX) + Math.abs(newKernelY[kidx] - oldY);
+                    }
+                }
+                
+                // Energy Invariance: Renormalize to preserve total kernel energy (L¹ norm)
+                // Use original energy to maintain invariance
+                const newEnergyX = newKernelX.reduce((s, v) => s + Math.abs(v), 0);
+                const newEnergyY = newKernelY.reduce((s, v) => s + Math.abs(v), 0);
+                
+                if (newEnergyX > 0 && originalEnergyX > 0) {
+                    const normX = originalEnergyX / newEnergyX;
+                    for (let i = 0; i < newKernelX.length; i++) {
+                        newKernelX[i] *= normX;
+                    }
+                }
+                if (newEnergyY > 0 && originalEnergyY > 0) {
+                    const normY = originalEnergyY / newEnergyY;
+                    for (let i = 0; i < newKernelY.length; i++) {
+                        newKernelY[i] *= normY;
+                    }
+                }
+                
+                // Smoothness Constraint: Apply Gaussian smoothing to preserve differentiability
+                smoothKernel(newKernelX, kSize);
+                smoothKernel(newKernelY, kSize);
+                
+                updatedScales.push({
+                    scale: scale,
+                    kernel: {
+                        gx: newKernelX,
+                        gy: newKernelY,
+                        size: kSize,
+                        scale: scale
+                    },
+                    generation: response.generation + 1
+                });
+                
+                totalKernelChange += kernelChange;
+                if (kernelChange > epsilon) {
+                    converged = false;
+                }
+            }
+            
+            return {
+                base: kernelFamily.base,
+                scales: updatedScales,
+                totalChange: totalKernelChange,
+                converged: converged && iteration > 2, // Require multiple iterations
+                avgAntclockRate: avgAntclockRate, // Store for display
+                driftCorrectionFactor: driftCorrectionFactor
+            };
+        }
+
+        /**
+         * Smooth kernel to preserve differentiability class
+         * Applies Gaussian smoothing to maintain smoothness constraint
+         */
+        function smoothKernel(kernel, kSize) {
+            const smoothed = new Float32Array(kernel);
+            const sigma = 0.5; // Smoothing radius
+            
+            for (let y = 0; y < kSize; y++) {
+                for (let x = 0; x < kSize; x++) {
+                    const idx = y * kSize + x;
+                    let sum = 0;
+                    let weight = 0;
+                    
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            
+                            if (nx >= 0 && nx < kSize && ny >= 0 && ny < kSize) {
+                                const nidx = ny * kSize + nx;
+                                const dist = Math.sqrt(dx*dx + dy*dy);
+                                const w = Math.exp(-dist*dist / (2*sigma*sigma));
+                                sum += kernel[nidx] * w;
+                                weight += w;
+                            }
+                        }
+                    }
+                    
+                    smoothed[idx] = weight > 0 ? sum / weight : kernel[idx];
+                }
+            }
+            
+            // Copy back
+            for (let i = 0; i < kernel.length; i++) {
+                kernel[i] = smoothed[i];
+            }
+        }
+
+        /**
+         * Test fixed-point stability: apply fractal Sobel iteratively
+         * Should converge to fixed point or short periodic orbit
+         */
+        function testFixedPointStability(lattice, size, maxIterations = 5) {
+            let currentLattice = new Float32Array(lattice);
+            let previousMagnitude = null;
+            let converged = false;
+            
+            for (let iter = 0; iter < maxIterations; iter++) {
+                const edges = computeFractalSobelGradients(currentLattice, size);
+                
+                if (previousMagnitude) {
+                    // Check convergence: magnitude change < threshold
+                    let maxDiff = 0;
+                    for (let i = 0; i < edges.magnitude.length; i++) {
+                        const diff = Math.abs(edges.magnitude[i] - previousMagnitude[i]);
+                        if (diff > maxDiff) maxDiff = diff;
+                    }
+                    
+                    if (maxDiff < 0.01) {
+                        converged = true;
+                        break;
+                    }
+                }
+                
+                previousMagnitude = new Float32Array(edges.magnitude);
+                
+                // Use edges to update lattice (fixed-point iteration)
+                // In practice, this would be part of the evolution loop
+            }
+            
+            return {converged, iterations: maxIterations};
+        }
+
+        /**
+         * Compute Sobel edge detection on lattice (as per paper Section 3.2.2)
+         * Now uses fractal Sobel for multi-scale edge detection
+         * Guardians detect compositional boundaries analogously to Sobel filters
+         */
+        function computeSobelGradients(lattice, size) {
+            // Use fractal Sobel for richer edge detection
+            return computeFractalSobelGradients(lattice, size);
+        }
+
+        /**
+         * Update guardians using Sobel edge detection on kernel lattices
+         * Paper Section 3.2.2: "Guardians detect discontinuities analogously to Sobel filters"
+         */
+        function updateGuardians() {
+            if (currentKernels.length === 0) {
+                // No kernels yet, use baseline values
+                guardianPhi = 0.85;
+                guardianPartial = 0.92;
+                guardianScriptR = 0.88;
+                return;
+            }
+
+            // Compute guardians from lattice edge detection
+            let totalPhi = 0, totalPartial = 0, totalScriptR = 0;
+            let count = 0;
+
+            for (const kernel of currentKernels) {
+                if (!kernel || !kernel.lattice) continue;
+
+                const size = Math.sqrt(kernel.lattice.length);
+                // Use stored fractal edges (refined) if available, otherwise compute fresh
+                const sobel = kernel.edges || computeFractalSobelGradients(kernel.lattice, size);
+
+                // ϕ (Phase Resonance Guardian): Detect semantic discontinuities
+                // Measure phase shift (change in semantic direction)
+                let phaseVariance = 0;
+                let phaseCount = 0;
+                for (let i = 0; i < sobel.direction.length; i++) {
+                    if (sobel.magnitude[i] > 0.1) {
+                        phaseVariance += Math.abs(sobel.direction[i]);
+                        phaseCount++;
+                    }
+                }
+                const avgPhaseShift = phaseCount > 0 ? phaseVariance / phaseCount : 0;
+                const phi = Math.max(0.3, Math.min(0.98, 1.0 - avgPhaseShift / Math.PI));
+
+                // ∂ (Indentation-Bracket Guardian): Detect structural discontinuities
+                // Measure depth discontinuity (gradient magnitude correlates with structural breaks)
+                let structuralVariance = 0;
+                let structuralCount = 0;
+                for (let i = 0; i < sobel.magnitude.length; i++) {
+                    if (sobel.magnitude[i] > 0.05) {
+                        structuralVariance += sobel.magnitude[i];
+                        structuralCount++;
+                    }
+                }
+                // Normalize: high edge density = low structural coherence
+                const edgeDensity = structuralCount / sobel.magnitude.length;
+                const avgStructuralGradient = structuralCount > 0 ? structuralVariance / structuralCount : 0;
+                const partial = Math.max(0.3, Math.min(0.98, 1.0 - (avgStructuralGradient * 0.5 + edgeDensity * 0.5)));
+
+                // ℛ (Return/Phaselock Guardian): Detect coherence discontinuities
+                // Measure preservation ratio (low gradients = high coherence)
+                let coherenceSum = 0;
+                let coherenceCount = 0;
+                let lowGradientCount = 0;
+                for (let i = 0; i < sobel.magnitude.length; i++) {
+                    const mag = sobel.magnitude[i];
+                    coherenceSum += 1.0 - mag;
+                    coherenceCount++;
+                    if (mag < 0.1) {
+                        lowGradientCount++; // Count smooth regions
+                    }
+                }
+                // Coherence = fraction of smooth regions + inverse of average gradient
+                const smoothRatio = lowGradientCount / coherenceCount;
+                const avgCoherence = coherenceCount > 0 ? coherenceSum / coherenceCount : 0.88;
+                const scriptR = Math.max(0.3, Math.min(0.98, (smoothRatio * 0.6 + avgCoherence * 0.4)));
+
+                totalPhi += phi;
+                totalPartial += partial;
+                totalScriptR += scriptR;
+                count++;
+            }
+
+            if (count > 0) {
+                guardianPhi = totalPhi / count;
+                guardianPartial = totalPartial / count;
+                guardianScriptR = totalScriptR / count;
+            }
+
+            // Phase lock (Theorem 3.2): Maintain coherence when above threshold
+            if (guardianScriptR > 0.7) {
+                guardianScriptR = Math.max(guardianScriptR, 0.88); // Phaselock maintained
+            }
+        }
+
+        /**
+         * Compute discrepancy (edge strength) from guardian tensor
+         * Paper Section 3.2.3: E = √(Δϕ² + Δ∂² + Δℛ²)
+         */
+        function computeDiscrepancy() {
+            if (currentKernels.length === 0) {
+                return 0.12; // Baseline when no kernels
+            }
+
+            // Edge strength from guardian gradients
+            const deltaPhi = 1.0 - guardianPhi;
+            const deltaPartial = 1.0 - guardianPartial;
+            const deltaScriptR = 1.0 - guardianScriptR;
+
+            const edgeStrength = Math.sqrt(
+                deltaPhi * deltaPhi +
+                deltaPartial * deltaPartial +
+                deltaScriptR * deltaScriptR
+            );
+
+            return edgeStrength;
+        }
+
+        // Removed unused functions - keeping only camera + SVG + sobel
+
+        // Removed all unused drawing functions - keeping only camera + SVG + sobel
+
+        /**
+         * Draw video overlay with edge detection
+         */
+        function drawVideoOverlay(kernel, canvas) {
+            if (!kernel || !kernel.lattice || !canvas) return;
+            const ctx = canvas.getContext('2d');
+            const { width, height } = canvas;
+            const size = Math.sqrt(kernel.lattice.length);
+            const scale = width / size;
+
+            // Clear overlay
+            ctx.clearRect(0, 0, width, height);
+
+            if (!kernel.edges) return;
+
+            const edges = kernel.edges;
+            const magnitude = edges.magnitude;
+            const direction = edges.direction;
+
+            // Draw edges as red pixels with intensity scaling
+            ctx.fillStyle = '#ff0000';
+            for (let y = 0; y < size; y += 2) {
+                for (let x = 0; x < size; x += 2) {
+                    const idx = y * size + x;
+                    const mag = magnitude[idx];
+
+                    if (mag > 0.2) {
+                        const alpha = Math.min(1.0, mag);
+                        ctx.globalAlpha = alpha * 0.8;
+                        ctx.fillRect(x * scale, y * scale, scale * 2, scale * 2);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Draw gradient vectors for strong edges
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 1;
+            for (let y = 0; y < size; y += 8) {
+                for (let x = 0; x < size; x += 8) {
+                    const idx = y * size + x;
+                    const mag = magnitude[idx];
+
+                    if (mag > 0.3) {
+                        const angle = direction[idx];
+                        const len = mag * 10;
+                        const px = x * scale;
+                        const py = y * scale;
+
+                        ctx.beginPath();
+                        ctx.moveTo(px, py);
+                        ctx.lineTo(
+                            px + Math.cos(angle) * len,
+                            py + Math.sin(angle) * len
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw antclock rate info
+            if (edges.avgAntclockRate !== undefined) {
+                ctx.fillStyle = '#4ecdc4';
+                ctx.font = '12px monospace';
+                ctx.fillText(`A: ${antclock} | R: ${edges.avgAntclockRate.toFixed(3)}`, 10, 20);
+            }
+        }
+
+        // Removed unused drawing functions - keeping only camera + SVG + sobel
+
+        /**
+         * Start video capture and real-time processing
+         */
+        async function startVideoCapture() {
+            try {
+                // Request camera access
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+
+                // Get UI elements
+                videoElement = document.getElementById('video-element');
+                videoOverlay = document.getElementById('video-overlay');
+                const videoContainer = document.getElementById('video-container');
+                const startBtn = document.getElementById('start-video-btn');
+                const stopBtn = document.getElementById('stop-video-btn');
+                const videoStats = document.getElementById('video-stats');
+
+                // Setup video element
+                videoElement.srcObject = videoStream;
+                videoElement.play();
+
+                // Setup overlay canvas
+                videoOverlay.width = 640;
+                videoOverlay.height = 480;
+
+                // Show UI
+                videoContainer.style.display = 'block';
+                videoStats.style.display = 'grid';
+                
+                // Reset frame timing
+                lastFrameTime = 0;
+                frameTimeHistory = [];
+                frameCounter = 0;
+                lastVideoTime = -1;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                startBtn.classList.remove('active');
+                stopBtn.classList.add('active');
+
+                // Auto-show SVG when video starts
+                const svgContainer = document.getElementById('ce1-svg-container');
+                if (svgContainer) {
+                    svgContainer.style.display = 'block';
+                    showSVG = true;
+                }
+
+                // Initialize CE Tower if not already done
+                if (!isInitialized) {
+                    initializeCETower();
+                }
+
+                // Create or get video kernel
+                if (!videoKernel) {
+                    // Create a kernel from the first frame
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = 640;
+                    tempCanvas.height = 480;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Wait for first frame
+                    videoElement.addEventListener('loadedmetadata', () => {
+                        tempCtx.drawImage(videoElement, 0, 0);
+                        const imageData = tempCtx.getImageData(0, 0, 640, 480);
+                        const lattice = frameToLattice(imageData);
+                        videoKernel = createKernelFromLattice(lattice, 'video');
+                        currentKernels.push(videoKernel);
+                    }, { once: true });
+                }
+
+                // Start processing loop
+                isVideoProcessing = true;
+                processVideoFrame();
+
+            } catch (error) {
+                console.error('Failed to start video capture:', error);
+                alert('Failed to access camera. Please check permissions.');
+            }
+        }
+
+        /**
+         * Stop video capture
+         */
+        function stopVideoCapture() {
+            // Reset frame timing
+            lastFrameTime = 0;
+            frameTimeHistory = [];
+            isVideoProcessing = false;
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+
+            const videoContainer = document.getElementById('video-container');
+            const startBtn = document.getElementById('start-video-btn');
+            const stopBtn = document.getElementById('stop-video-btn');
+            const videoStats = document.getElementById('video-stats');
+
+            videoContainer.style.display = 'none';
+            videoStats.style.display = 'none';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            startBtn.classList.add('active');
+            stopBtn.classList.remove('active');
+
+            // Clear overlay
+            if (videoOverlay) {
+                const ctx = videoOverlay.getContext('2d');
+                ctx.clearRect(0, 0, videoOverlay.width, videoOverlay.height);
+            }
+
+            // Hide SVG when video stops
+            const svgContainer = document.getElementById('ce1-svg-container');
+            if (svgContainer) {
+                svgContainer.style.display = 'none';
+            }
+        }
+
+        /**
+         * Toggle SVG display
+         */
+        function toggleSVGDisplay() {
+            showSVG = !showSVG;
+            const svgContainer = document.getElementById('ce1-svg-container');
+            if (svgContainer) {
+                svgContainer.style.display = showSVG ? 'block' : 'none';
+            }
+            if (showSVG && videoKernel) {
+                updateRealTimeSVG(videoKernel);
+            }
+        }
+
+        /**
+         * Process video frame through CE Tower
+         */
+        function processVideoFrame() {
+            if (!isVideoProcessing || !videoElement || !videoOverlay) return;
+
+            // Only process if video has a new frame (currentTime changed)
+            const currentVideoTime = videoElement.currentTime;
+            if (currentVideoTime === lastVideoTime) {
+                // No new frame yet, schedule check again
+                requestAnimationFrame(processVideoFrame);
+                return;
+            }
+            lastVideoTime = currentVideoTime;
+
+            const startTime = performance.now();
+
+            try {
+                // Capture fresh frame from camera
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 640;
+                tempCanvas.height = 480;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(videoElement, 0, 0);
+
+                // Convert to lattice
+                const imageData = tempCtx.getImageData(0, 0, 640, 480);
+                const lattice = frameToLattice(imageData);
+
+                // Update video kernel lattice with fresh frame
+                if (videoKernel) {
+                    if (!lattice || lattice.length === 0) {
+                        requestAnimationFrame(processVideoFrame);
+                        return;
+                    }
+                    videoKernel.lattice = lattice;
+
+                    // Process through CE Tower with antclock timing
+                    const size = Math.sqrt(lattice.length);
+                    
+                    // Compute fractal Sobel edges on FRESH frame
+                    const freshEdges = computeFractalSobelGradients(
+                        lattice,
+                        size,
+                        videoKernel.kernelFamily,
+                        videoKernel.kernelIteration || 0,
+                        antclock,
+                        null // Don't use previous for convergence - compute fresh
+                    );
+                    
+                    // Merge edge results across frames
+                    if (videoKernel.edges) {
+                        videoKernel.edges = mergeEdgeResults(videoKernel.edges, freshEdges);
+                    } else {
+                        videoKernel.edges = freshEdges;
+                    }
+
+                    // Update kernel family
+                    if (videoKernel.edges.updatedKernels) {
+                        videoKernel.kernelFamily = videoKernel.edges.updatedKernels;
+                        videoKernel.kernelIteration = (videoKernel.kernelIteration || 0) + 1;
+                    }
+
+                    // Evolve lattice with edge preservation
+                    if (kernelSystem) {
+                        videoKernel.lattice = evolveLatticeWithEdgePreservation(videoKernel);
+                    }
+
+                    // Update guardians
+                    updateGuardians();
+
+                    // Advance antclock (experiential time)
+                    antclock++;
+
+                    // Draw overlay with edges
+                    drawVideoOverlay(videoKernel, videoOverlay);
+
+                    // Update SVG in real-time (always update when video is processing)
+                    updateRealTimeSVG(videoKernel);
+
+                    // Update stats
+                    frameCounter++;
+                    const processingTime = performance.now() - startTime;
+                    updateVideoStats(frameCounter, processingTime);
+                } else {
+                    // Create video kernel if it doesn't exist yet
+                    videoKernel = createKernelFromLattice(lattice, 'video');
+                    currentKernels.push(videoKernel);
+                    
+                    // Update stats even for first frame
+                    frameCounter++;
+                    const processingTime = performance.now() - startTime;
+                    updateVideoStats(frameCounter, processingTime);
+                }
+
+            } catch (error) {
+                console.error('Frame processing error:', error);
+            }
+
+            // Schedule next frame - ensure loop continues
+            if (isVideoProcessing) {
+                requestAnimationFrame(processVideoFrame);
+            }
+        }
+
+        /**
+         * Convert image data to lattice
+         */
+        function frameToLattice(imageData) {
+            const { width, height, data } = imageData;
+            const latticeSize = 256;
+            const lattice = new Float32Array(latticeSize * latticeSize);
+
+            const scaleX = width / latticeSize;
+            const scaleY = height / latticeSize;
+
+            for (let y = 0; y < latticeSize; y++) {
+                for (let x = 0; x < latticeSize; x++) {
+                    const srcX = Math.floor(x * scaleX);
+                    const srcY = Math.floor(y * scaleY);
+                    const idx = (srcY * width + srcX) * 4;
+
+                    const r = data[idx] / 255;
+                    const g = data[idx + 1] / 255;
+                    const b = data[idx + 2] / 255;
+
+                    // Convert to luminance
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    lattice[y * latticeSize + x] = lum;
+                }
+            }
+
+            return lattice;
+        }
+
+        /**
+         * Create kernel from lattice
+         */
+        function createKernelFromLattice(lattice, id) {
+            const size = Math.sqrt(lattice.length);
+            return {
+                id: id || `kernel_${Date.now()}`,
+                lattice: lattice,
+                size: size,
+                edges: null,
+                edgeHistory: [],
+                kernelFamily: null,
+                kernelIteration: 0
+            };
+        }
+
+        /**
+         * Draw video overlay with edge detection
+         */
+        function drawVideoOverlay(kernel, canvas) {
+            if (!kernel || !kernel.lattice || !canvas) return;
+            const ctx = canvas.getContext('2d');
+            const { width, height } = canvas;
+            const size = Math.sqrt(kernel.lattice.length);
+            const scale = width / size;
+
+            // Clear overlay
+            ctx.clearRect(0, 0, width, height);
+
+            if (!kernel.edges) return;
+
+            const edges = kernel.edges;
+            const magnitude = edges.magnitude;
+            const direction = edges.direction;
+
+            // Draw edges as red pixels with intensity scaling
+            ctx.fillStyle = '#ff0000';
+            for (let y = 0; y < size; y += 2) {
+                for (let x = 0; x < size; x += 2) {
+                    const idx = y * size + x;
+                    const mag = magnitude[idx];
+
+                    if (mag > 0.2) {
+                        const alpha = Math.min(1.0, mag);
+                        ctx.globalAlpha = alpha * 0.8;
+                        ctx.fillRect(x * scale, y * scale, scale * 2, scale * 2);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Draw gradient vectors for strong edges
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 1;
+            for (let y = 0; y < size; y += 8) {
+                for (let x = 0; x < size; x += 8) {
+                    const idx = y * size + x;
+                    const mag = magnitude[idx];
+
+                    if (mag > 0.3) {
+                        const angle = direction[idx];
+                        const len = mag * 10;
+                        const px = x * scale;
+                        const py = y * scale;
+
+                        ctx.beginPath();
+                        ctx.moveTo(px, py);
+                        ctx.lineTo(
+                            px + Math.cos(angle) * len,
+                            py + Math.sin(angle) * len
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw antclock rate info
+            if (edges.avgAntclockRate !== undefined) {
+                ctx.fillStyle = '#4ecdc4';
+                ctx.font = '12px monospace';
+                ctx.fillText(`A: ${antclock} | R: ${edges.avgAntclockRate.toFixed(3)}`, 10, 20);
+            }
+        }
+
+        /**
+         * Update video statistics display
+         */
+        function updateVideoStats(frame, processingTime) {
+            const now = performance.now();
+            
+            // Calculate actual FPS from frame timing
+            const fpsElement = document.getElementById('video-fps');
+            if (fpsElement) {
+                if (lastFrameTime > 0) {
+                    const frameDelta = now - lastFrameTime;
+                    frameTimeHistory.push(frameDelta);
+                    if (frameTimeHistory.length > 30) {
+                        frameTimeHistory.shift();
+                    }
+                    
+                    const avgFrameTime = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
+                    const fps = avgFrameTime > 0 ? (1000 / avgFrameTime).toFixed(1) : '0';
+                    fpsElement.textContent = fps;
+                } else {
+                    fpsElement.textContent = '0';
+                }
+            }
+            
+            lastFrameTime = now;
+        }
+
+        /**
+         * Merge edge detection results across frames
+         */
+        function mergeEdgeResults(previousEdges, freshEdges) {
+            if (!previousEdges || !freshEdges) return freshEdges;
+            
+            const mergeAlpha = 0.6; // Weight for fresh edges (60% fresh, 40% previous)
+            const size = freshEdges.magnitude.length;
+            
+            // Merge magnitude and direction arrays
+            const mergedMagnitude = new Float32Array(size);
+            const mergedDirection = new Float32Array(size);
+            
+            for (let i = 0; i < size; i++) {
+                // Merge magnitude: weighted average
+                mergedMagnitude[i] = mergeAlpha * freshEdges.magnitude[i] + (1 - mergeAlpha) * previousEdges.magnitude[i];
+                
+                // Merge direction: weighted circular mean
+                const prevAngle = previousEdges.direction[i];
+                const freshAngle = freshEdges.direction[i];
+                const diff = freshAngle - prevAngle;
+                const wrappedDiff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                mergedDirection[i] = prevAngle + mergeAlpha * wrappedDiff;
+            }
+            
+            // Preserve all properties from fresh edges, but use merged magnitude/direction
+            return {
+                magnitude: mergedMagnitude,
+                direction: mergedDirection,
+                maxMagnitude: Math.max(...Array.from(mergedMagnitude)),
+                scaleEnergies: freshEdges.scaleEnergies || [],
+                totalEnergy: freshEdges.totalEnergy,
+                baseEnergy: freshEdges.baseEnergy,
+                alpha: freshEdges.alpha,
+                weights: freshEdges.weights || [],
+                sharpeningCoeffs: freshEdges.sharpeningCoeffs || [],
+                scaleResponses: freshEdges.scaleResponses || [],
+                updatedKernels: freshEdges.updatedKernels,
+                converged: freshEdges.converged,
+                maxChange: freshEdges.maxChange || 0,
+                avgAntclockRate: freshEdges.avgAntclockRate || 0,
+                driftCorrectionFactor: freshEdges.driftCorrectionFactor || 1.0
+            };
+        }
+
+        /**
+         * Generate real-time SVG from evolved lattice
+         */
+        function updateRealTimeSVG(kernel) {
+            if (!kernel || !kernel.lattice) {
+                return; // Silently skip if no data yet
+            }
+
+            const svgContainer = document.getElementById('ce1-svg-container');
+            const svgDisplay = document.getElementById('ce1-svg-display');
+            
+            if (!svgContainer || !svgDisplay) {
+                return; // Silently skip if containers don't exist
+            }
+
+            // Always show container when video is processing
+            if (isVideoProcessing) {
+                svgContainer.style.display = 'block';
+                showSVG = true; // Auto-enable when processing
+            }
+
+            const size = Math.sqrt(kernel.lattice.length);
+            
+            // Validate data
+            if (!size || size !== size || size <= 0) {
+                return;
+            }
+            const lattice = kernel.lattice;
+            const edges = kernel.edges;
+
+            // Create SVG with viewBox for scaling
+            let svg = `<svg width="100%" height="100%" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="background: #000;">`;
+
+            // Draw lattice as filled regions (full contour tracing)
+            const threshold = 0.3;
+            const paths = extractLatticePaths(lattice, size, threshold);
+            
+            for (const path of paths) {
+                svg += `<path d="${path.d}" fill="rgba(78, 205, 196, 0.4)" stroke="#4ecdc4" stroke-width="0.5"/>`;
+            }
+
+            // Draw edges as SVG paths (full edge extraction)
+            if (edges && edges.magnitude) {
+                const edgePaths = extractEdgePaths(edges, size, 0.25);
+                for (const path of edgePaths) {
+                    svg += `<path d="${path.d}" fill="none" stroke="#ff0000" stroke-width="${path.width}" opacity="${path.opacity}"/>`;
+                }
+
+                // Draw gradient vectors as lines
+                svg += '<g stroke="#ffff00" stroke-width="0.3" opacity="0.6">';
+                for (let y = 0; y < size; y += 8) {
+                    for (let x = 0; x < size; x += 8) {
+                        const idx = y * size + x;
+                        const mag = edges.magnitude[idx];
+                        if (mag > 0.3) {
+                            const angle = edges.direction[idx];
+                            const len = mag * 8;
+                            const x2 = x + Math.cos(angle) * len;
+                            const y2 = y + Math.sin(angle) * len;
+                            svg += `<line x1="${x}" y1="${y}" x2="${x2}" y2="${y2}"/>`;
+                        }
+                    }
+                }
+                svg += '</g>';
+            }
+
+            // Add antclock info as text
+            if (edges && edges.avgAntclockRate !== undefined) {
+                svg += `<text x="10" y="20" fill="#4ecdc4" font-size="12" font-family="monospace">A: ${antclock} | R: ${edges.avgAntclockRate.toFixed(3)}</text>`;
+            }
+
+            svg += '</svg>';
+            
+            // Direct update - set innerHTML synchronously
+            svgDisplay.innerHTML = svg;
+        }
+
+
+        /**
+         * Extract paths from lattice (minimal implementation)
+         */
+        function extractLatticePaths(lattice, size, threshold) {
+            if (kernelSystem && kernelSystem.extractPathsFromLattice) {
+                return kernelSystem.extractPathsFromLattice(lattice, size, threshold);
+            }
+            // Fallback: simple threshold-based regions
+            const paths = [];
+            const visited = new Set();
+            for (let y = 0; y < size - 1; y++) {
+                for (let x = 0; x < size - 1; x++) {
+                    const idx = y * size + x;
+                    if (visited.has(idx) || lattice[idx] < threshold) continue;
+                    const contour = traceSimpleContour(lattice, size, x, y, threshold, visited);
+                    if (contour.length > 2) {
+                        paths.push({d: `M${contour[0].x} ${contour[0].y} ${contour.slice(1).map(p => `L${p.x} ${p.y}`).join(' ')} Z`});
+                    }
+                }
+            }
+            return paths;
+        }
+
+        function traceSimpleContour(lattice, size, startX, startY, threshold, visited) {
+            const contour = [];
+            let x = startX, y = startY, dir = 0;
+            const maxLen = size * 2;
+            do {
+                const idx = y * size + x;
+                if (visited.has(idx) || contour.length > maxLen) break;
+                visited.add(idx);
+                contour.push({x, y});
+                const right = (x + 1 < size) && lattice[y * size + (x + 1)] >= threshold;
+                const down = (y + 1 < size) && lattice[(y + 1) * size + x] >= threshold;
+                const left = (x - 1 >= 0) && lattice[y * size + (x - 1)] >= threshold;
+                const up = (y - 1 >= 0) && lattice[(y - 1) * size + x] >= threshold;
+                if (dir === 0 && right) x++;
+                else if (dir === 1 && down) y++;
+                else if (dir === 2 && left) x--;
+                else if (dir === 3 && up) y--;
+                else dir = (dir + 1) % 4;
+            } while (contour.length < 2 || (x !== startX || y !== startY));
+            return contour;
+        }
+
+        /**
+         * Extract edge paths from edge data
+         */
+        function extractEdgePaths(edges, size, threshold) {
+            const paths = [];
+            const visited = new Set();
+            const magnitude = edges.magnitude;
+            const direction = edges.direction;
+
+            // Find edge segments
+            for (let y = 1; y < size - 1; y += 2) {
+                for (let x = 1; x < size - 1; x += 2) {
+                    const idx = y * size + x;
+                    if (visited.has(idx) || magnitude[idx] < threshold) continue;
+
+                    // Trace edge segment
+                    const segment = traceEdgeSegment(magnitude, direction, size, x, y, threshold, visited);
+                    if (segment.length > 1) {
+                        const opacity = Math.min(1.0, magnitude[segment[0].idx] * 2);
+                        const width = 0.5 + magnitude[segment[0].idx] * 1.5;
+                        paths.push({
+                            d: edgeSegmentToSVGPath(segment),
+                            opacity: opacity,
+                            width: width
+                        });
+                    }
+                }
+            }
+
+            return paths;
+        }
+
+        /**
+         * Trace edge segment following gradient direction
+         */
+        function traceEdgeSegment(magnitude, direction, size, startX, startY, threshold, visited) {
+            const segment = [];
+            let x = startX;
+            let y = startY;
+            const maxLength = 50;
+
+            while (segment.length < maxLength) {
+                const idx = y * size + x;
+                if (visited.has(idx) || magnitude[idx] < threshold) break;
+
+                visited.add(idx);
+                segment.push({x, y, idx});
+
+                // Follow gradient direction
+                const angle = direction[idx];
+                const dx = Math.cos(angle);
+                const dy = Math.sin(angle);
+
+                const nextX = Math.round(x + dx);
+                const nextY = Math.round(y + dy);
+
+                if (nextX < 0 || nextX >= size || nextY < 0 || nextY >= size) break;
+                if (magnitude[nextY * size + nextX] < threshold) break;
+
+                x = nextX;
+                y = nextY;
+            }
+
+            return segment;
+        }
+
+        /**
+         * Convert edge segment to SVG path
+         */
+        function edgeSegmentToSVGPath(segment) {
+            if (segment.length === 0) return '';
+            if (segment.length === 1) return `M${segment[0].x} ${segment[0].y}`;
+
+            let path = `M${segment[0].x} ${segment[0].y}`;
+            for (let i = 1; i < segment.length; i++) {
+                path += ` L${segment[i].x} ${segment[i].y}`;
+            }
+            return path;
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initializeCETower();
+        };
+    </script>
+</body>
+</html>

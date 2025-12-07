@@ -1,6 +1,6 @@
 /**
  * Test CE1 harmonic system components
- * Run with: node tests/math/cetest.js
+ * Run with: node tests/math/ceTest.js
  */
 
 import { HarmonicOperator, CEEvaluator, CEHeight, CEFunctional, CERoots, CE2Lift } from '../../src/math/harmonic.js';

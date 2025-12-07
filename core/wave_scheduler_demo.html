@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave Scheduler - First-Class Primitive</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4ecdc4;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #4ecdc4;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-size: 14px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #2a2a2a;
+            border: 1px solid #4ecdc4;
+            color: #4ecdc4;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #3a3a3a;
+        }
+        button.active {
+            background: #4ecdc4;
+            color: #000;
+        }
+        .output {
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 11px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+        .output-line {
+            margin: 2px 0;
+            color: #888;
+        }
+        .output-line.event {
+            color: #4ecdc4;
+        }
+        .output-line.state {
+            color: #888;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat {
+            background: #0f0f0f;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 18px;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        canvas {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wave Scheduler</h1>
+        <p>A first-class primitive: not a loop, not a timer, not a queue.<br>
+        A dynamical operator that produces event times by evolving a phase.</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Scheduler</h2>
+            <div class="controls">
+                <button onclick="createScheduler('fibonacci')">Fibonacci</button>
+                <button onclick="createScheduler('harmonic')">Harmonic</button>
+                <button onclick="createScheduler('exponential')">Exponential</button>
+                <button onclick="createScheduler('linear')">Linear</button>
+                <button onclick="createScheduler('ce')">CE Bracket</button>
+                <button onclick="createScheduler('feigenbaum')">Feigenbaum</button>
+                <button onclick="startScheduler()" id="start-btn">▶ Start</button>
+                <button onclick="stopScheduler()" id="stop-btn">⏸ Stop</button>
+                <button onclick="resetScheduler()">↻ Reset</button>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Events</div>
+                    <div class="stat-value" id="event-count">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">State</div>
+                    <div class="stat-value" id="state-display">—</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Next Event</div>
+                    <div class="stat-value" id="next-event">—</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Scheduler</div>
+                    <div class="stat-value" id="scheduler-name">—</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Output</h2>
+            <div class="output" id="output"></div>
+        </div>
+
+        <div class="panel" style="grid-column: 1 / -1;">
+            <h2>Waveform</h2>
+            <canvas id="waveform"></canvas>
+        </div>
+    </div>
+
+    <script src="wave_scheduler.js"></script>
+    <script>
+        let scheduler = null;
+        let running = false;
+        let animationId = null;
+        const output = document.getElementById('output');
+        const canvas = document.getElementById('waveform');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = 300;
+        
+        const waveformData = [];
+        const maxPoints = 500;
+
+        function log(message, className = '') {
+            const line = document.createElement('div');
+            line.className = `output-line ${className}`;
+            line.textContent = message;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function createScheduler(type) {
+            stopScheduler();
+            
+            switch(type) {
+                case 'fibonacci':
+                    scheduler = WaveScheduler.fibonacci(1, 1);
+                    break;
+                case 'harmonic':
+                    scheduler = WaveScheduler.harmonic(0.1, 10, 0);
+                    break;
+                case 'exponential':
+                    scheduler = WaveScheduler.exponential(1.5, 1);
+                    break;
+                case 'linear':
+                    scheduler = WaveScheduler.linear(1, 0);
+                    break;
+                case 'ce':
+                    scheduler = WaveScheduler.ce(0.5, 0.5, 0.5, 0.5);
+                    break;
+                case 'feigenbaum':
+                    scheduler = WaveScheduler.feigenbaum(3.56995, 0.5);
+                    break;
+            }
+            
+            scheduler.reset();
+            document.getElementById('scheduler-name').textContent = scheduler.name;
+            waveformData.length = 0;
+            log(`Created ${scheduler.name} scheduler`, 'event');
+            updateDisplay();
+        }
+
+        function startScheduler() {
+            if (!scheduler) {
+                log('No scheduler created', 'state');
+                return;
+            }
+            
+            running = true;
+            document.getElementById('start-btn').classList.add('active');
+            document.getElementById('stop-btn').classList.remove('active');
+            
+            function animate() {
+                if (!running || !scheduler) return;
+                
+                const time = scheduler.step();
+                const state = scheduler.getState();
+                
+                log(`n=${scheduler.n} time=${time.toFixed(3)} state=[${state.map(x => x.toFixed(2)).join(', ')}]`, 'event');
+                
+                waveformData.push({ n: scheduler.n, time, state });
+                if (waveformData.length > maxPoints) {
+                    waveformData.shift();
+                }
+                
+                updateDisplay();
+                drawWaveform();
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        function stopScheduler() {
+            running = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            document.getElementById('start-btn').classList.remove('active');
+            document.getElementById('stop-btn').classList.add('active');
+        }
+
+        function resetScheduler() {
+            stopScheduler();
+            if (scheduler) {
+                scheduler.reset();
+                waveformData.length = 0;
+                log('Scheduler reset', 'state');
+                updateDisplay();
+                drawWaveform();
+            }
+        }
+
+        function updateDisplay() {
+            if (!scheduler) return;
+            
+            document.getElementById('event-count').textContent = scheduler.events.length;
+            const state = scheduler.getState();
+            document.getElementById('state-display').textContent = 
+                state.length > 2 ? `[${state.length}D]` : `[${state.map(x => x.toFixed(1)).join(',')}]`;
+            
+            if (scheduler.events.length > 0) {
+                const lastEvent = scheduler.events[scheduler.events.length - 1];
+                document.getElementById('next-event').textContent = lastEvent.time.toFixed(2);
+            }
+        }
+
+        function drawWaveform() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (waveformData.length < 2) return;
+            
+            const padding = 40;
+            const w = canvas.width - padding * 2;
+            const h = canvas.height - padding * 2;
+            
+            // Find min/max for scaling
+            let minTime = Infinity, maxTime = -Infinity;
+            for (const point of waveformData) {
+                minTime = Math.min(minTime, point.time);
+                maxTime = Math.max(maxTime, point.time);
+            }
+            const timeRange = maxTime - minTime || 1;
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+            
+            // Draw waveform
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let i = 0; i < waveformData.length; i++) {
+                const point = waveformData[i];
+                const x = padding + (i / (waveformData.length - 1)) * w;
+                const y = canvas.height - padding - ((point.time - minTime) / timeRange) * h;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // Draw grid
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding + (i / 10) * h;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+        }
+
+        // Initialize with Fibonacci
+        createScheduler('fibonacci');
+    </script>
+</body>
+</html>
+
