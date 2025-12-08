@@ -1,6 +1,6 @@
 # Guardian Consciousness Ecology - Development Makefile
 
-.PHONY: server demo clean help open quantum ecology test test-e2e
+.PHONY: server demo clean help open quantum ecology diatom test test-e2e
 
 # Configuration
 PORT := 10000
@@ -106,6 +106,26 @@ ecology:
 		exit 1; \
 	fi
 
+# Open diatom computing demo
+diatom:
+	@echo "🌊 Opening Diatom Computing demo..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		if ! curl -s http://localhost:$(PORT) >/dev/null 2>&1; then \
+			echo "📡 Starting HTTP server on port $(PORT)..."; \
+			python3 server.py $(PORT) >/dev/null 2>&1 & \
+			SERVER_PID=$$!; \
+			echo $$SERVER_PID > .server_pid; \
+			sleep 1; \
+		fi; \
+		echo "🌐 Opening diatom computing demo..."; \
+		open http://localhost:$(PORT)/demos/diatom_computing.html; \
+		echo "✅ Diatom computing demo opened!"; \
+		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
+	else \
+		echo "❌ Python3 not found. Please install Python 3."; \
+		exit 1; \
+	fi
+
 # Clean up any background processes and files
 clean:
 	@echo "🧹 Cleaning up background processes and files..."
@@ -140,6 +160,7 @@ help:
 	@echo "  open            - Open demo page (verifies server is running)"
 	@echo "  quantum         - Open quantum learning demo"
 	@echo "  ecology         - Open ecological energy landscape"
+	@echo "  diatom          - Open diatom computing demo"
 	@echo "  test            - Run E2E tests"
 	@echo "  test-e2e        - Run E2E tests (alias)"
 	@echo "  clean           - Stop background server processes and clean files"
@@ -152,5 +173,6 @@ help:
 	@echo "  make open         # Open browser to demo"
 	@echo "  make quantum      # Open quantum learning demo"
 	@echo "  make ecology      # Open ecological energy landscape"
+	@echo "  make diatom       # Open diatom computing demo"
 	@echo "  make test         # Run E2E tests"
 	@echo "  make clean        # Stop server and clean files"
