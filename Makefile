@@ -1,6 +1,6 @@
 # Guardian Consciousness Ecology - Development Makefile
 
-.PHONY: server demo clean help open
+.PHONY: server demo clean help open quantum
 
 # Configuration
 PORT := 10000
@@ -66,6 +66,35 @@ open: scripts/check_server_status.sh
 		open $(URL); \
 	fi
 
+# Open quantum learning demo
+quantum:
+	@echo "⚛️  Opening Quantum Learning demo..."
+	@if [ -f $(READY_FILE) ]; then \
+		READY_CONTENT=$$(cat $(READY_FILE) 2>/dev/null); \
+		if [[ $$READY_CONTENT =~ READY:$(PORT):[0-9]+:([0-9]+) ]]; then \
+			SERVER_PID="$${BASH_REMATCH[1]}"; \
+			if kill -0 "$$SERVER_PID" 2>/dev/null; then \
+				echo "✅ Server is running - opening quantum learning demo..."; \
+				open http://localhost:$(PORT)/demos/quantum_learning.html; \
+			else \
+				echo "❌ Server not running - starting server first..."; \
+				@$(MAKE) server & \
+				sleep 2; \
+				open http://localhost:$(PORT)/demos/quantum_learning.html; \
+			fi; \
+		else \
+			echo "⚠️  Starting server..."; \
+			@$(MAKE) server & \
+			sleep 2; \
+			open http://localhost:$(PORT)/demos/quantum_learning.html; \
+		fi; \
+	else \
+		echo "⚠️  Starting server..."; \
+		@$(MAKE) server & \
+		sleep 2; \
+		open http://localhost:$(PORT)/demos/quantum_learning.html; \
+	fi
+
 # Clean up any background processes and files
 clean:
 	@echo "🧹 Cleaning up background processes and files..."
@@ -91,6 +120,7 @@ help:
 	@echo "  demo    - Start server and open guardian demo (default)"
 	@echo "  server  - Start HTTP server only"
 	@echo "  open    - Open demo page (verifies server is running)"
+	@echo "  quantum - Open quantum learning demo"
 	@echo "  clean   - Stop background server processes and clean files"
 	@echo "  help    - Show this help message"
 	@echo ""

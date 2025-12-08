@@ -200,6 +200,23 @@
                 <button class="launch-btn">🚀 Launch Consolidated Demo</button>
             </div>
 
+            <div class="system-card featured-system" onclick="launchSystem('kaleidoscope')">
+                <div class="system-icon">🌟</div>
+                <h3 class="system-title">Mathematical Kaleidoscope</h3>
+                <p class="system-description">
+                    A living canvas where Wave Schedulers, Harmonic Operators, and Bateman-Reiss
+                    flow together in an interactive dance of mathematical beauty.
+                </p>
+                <ul class="system-features">
+                    <li>Wave-based rhythmic animation</li>
+                    <li>Harmonic phase color transformations</li>
+                    <li>Interactive field generation</li>
+                    <li>Characteristic curve extraction</li>
+                    <li>Real-time mathematical art</li>
+                </ul>
+                <button class="launch-btn">✨ Launch Kaleidoscope</button>
+            </div>
+
             <div class="system-card" onclick="launchSystem('sobel')">
                 <div class="system-icon">🔮</div>
                 <h3 class="system-title">Self-Referential Sobel System</h3>
@@ -274,6 +291,7 @@
         function launchSystem(system) {
             const urls = {
                 'consolidated': 'sagestring_visual_systems.html',
+                'kaleidoscope': 'demos/mathematical_kaleidoscope.html',
                 'sobel': 'demos/sobel/sobel.html',
                 'kernel': 'demos/svg_kernel/svg_kernel_demo.html',
                 'research': 'README_visual_systems.md'

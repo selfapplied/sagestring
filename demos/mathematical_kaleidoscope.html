@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathematical Kaleidoscope - Living Canvas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff88;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff88;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(45deg, #00ff88, #00aaff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .controls {
+            position: absolute;
+            top: 120px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 250px;
+            z-index: 50;
+            font-size: 0.85rem;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #00aaff;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            background: #111;
+            border: 1px solid #333;
+            color: #00ff88;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #00aaff;
+            transform: scale(1.05);
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.8rem;
+            max-width: 300px;
+            z-index: 50;
+        }
+
+        .info h3 {
+            color: #00aaff;
+            margin-bottom: 10px;
+        }
+
+        .info p {
+            margin: 5px 0;
+            opacity: 0.8;
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌟 Mathematical Kaleidoscope</h1>
+        <p class="subtitle">A living canvas where mathematics becomes art</p>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Wave Frequency: <span id="freqValue">1.0</span></label>
+                <input type="range" id="freqSlider" min="0.1" max="5" step="0.1" value="1.0">
+            </div>
+            <div class="control-group">
+                <label>Harmonic Phase: <span id="phaseValue">0.0</span></label>
+                <input type="range" id="phaseSlider" min="0" max="6.28" step="0.1" value="0">
+            </div>
+            <div class="control-group">
+                <label>Field Intensity: <span id="intensityValue">1.0</span></label>
+                <input type="range" id="intensitySlider" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
+            <div class="control-group">
+                <label>Seed Text:</label>
+                <input type="text" id="seedInput" value="mathematical beauty" placeholder="Enter text...">
+            </div>
+            <button onclick="generateFromText()">Generate from Text</button>
+            <button onclick="generateRandom()">Random Field</button>
+            <button onclick="clearCanvas()">Clear</button>
+        </div>
+
+        <div class="info">
+            <h3>🎨 How It Works</h3>
+            <p><strong>Wave Schedulers:</strong> Control rhythmic evolution</p>
+            <p><strong>Harmonic Operators:</strong> Phase-based color transformations</p>
+            <p><strong>Bateman-Reiss:</strong> Flowing boundary extraction</p>
+            <p><strong>Click & Drag:</strong> Add interactive fields</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Wave Scheduler (inline for demo)
+        class WaveScheduler {
+            constructor(config) {
+                this.operator = typeof config.operator === 'function' ? config.operator : 
+                    (state) => {
+                        const result = new Array(config.operator.length).fill(0);
+                        for (let i = 0; i < config.operator.length; i++) {
+                            for (let j = 0; j < config.operator[i].length; j++) {
+                                result[i] += config.operator[i][j] * state[j];
+                            }
+                        }
+                        return result;
+                    };
+                this.phase = config.phase;
+                this.sample = config.sample || ((state) => state[0]);
+                this.state = Array.isArray(this.phase) ? [...this.phase] : {...this.phase};
+                this.n = 0;
+            }
+            
+            evolve() {
+                this.state = this.operator(this.state);
+                this.n++;
+                return this.state;
+            }
+            
+            getState() {
+                return Array.isArray(this.state) ? [...this.state] : {...this.state};
+            }
+        }
+        
+        WaveScheduler.harmonic = (frequency = 1.0, amplitude = 1.0, phase0 = 0) => {
+            const dt = 0.01;
+            const omega = 2 * Math.PI * frequency;
+            return new WaveScheduler({
+                operator: (state) => {
+                    const [x, v] = state;
+                    return [
+                        x + v * dt,
+                        v - omega * omega * x * dt
+                    ];
+                },
+                phase: [amplitude * Math.cos(phase0), -amplitude * omega * Math.sin(phase0)],
+                sample: (state) => state[0]
+            });
+        };
+
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - 120;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // State
+        let fields = [];
+        let curves = [];
+        let time = 0;
+        let mouseX = 0, mouseY = 0;
+        let isMouseDown = false;
+
+        // Wave Schedulers for animation
+        const waveScheduler = WaveScheduler.harmonic(1.0, 1.0, 0);
+        const phaseScheduler = WaveScheduler.harmonic(0.5, Math.PI, 0);
+
+        // Harmonic operator (simplified)
+        class HarmonicOperator {
+            constructor() {
+                this.phase = 0;
+            }
+
+            H(x) {
+                // Simplified harmonic: returns phase and magnitude
+                const domain = Math.log(Math.max(x, 0.001));
+                const memory = Math.sin(x);
+                const morphism = Math.tan(x * Math.PI / 2);
+                const witness = Math.sin(x * Math.PI);
+                
+                return {
+                    real: domain * memory * Math.cos(morphism),
+                    imag: domain * memory * Math.sin(morphism) * witness,
+                    phase: Math.atan2(domain * memory * Math.sin(morphism) * witness, 
+                                     domain * memory * Math.cos(morphism))
+                };
+            }
+
+            getColor(phase, intensity = 1.0) {
+                // Map harmonic phase to color
+                const r = Math.floor(128 + 127 * Math.sin(phase + 0));
+                const g = Math.floor(128 + 127 * Math.sin(phase + 2.09));
+                const b = Math.floor(128 + 127 * Math.sin(phase + 4.18));
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        const harmonic = new HarmonicOperator();
+
+        // Scalar field generator
+        class ScalarField {
+            constructor(centerX, centerY, amplitude, sigma, color) {
+                this.centerX = centerX;
+                this.centerY = centerY;
+                this.amplitude = amplitude;
+                this.sigma = sigma;
+                this.color = color;
+            }
+
+            u(x, y) {
+                const dx = x - this.centerX;
+                const dy = y - this.centerY;
+                const r2 = dx * dx + dy * dy;
+                return this.amplitude * Math.exp(-r2 / (2 * this.sigma * this.sigma));
+            }
+
+            gradient(x, y) {
+                const dx = x - this.centerX;
+                const dy = y - this.centerY;
+                const r2 = dx * dx + dy * dy;
+                const sigma2 = this.sigma * this.sigma;
+                const gaussian = Math.exp(-r2 / (2 * sigma2));
+                return {
+                    x: -this.amplitude * (dx / sigma2) * gaussian,
+                    y: -this.amplitude * (dy / sigma2) * gaussian
+                };
+            }
+        }
+
+        // Bateman-Reiss curve integrator (simplified)
+        class CurveIntegrator {
+            constructor(field, startX, startY) {
+                this.field = field;
+                this.startX = startX;
+                this.startY = startY;
+                this.points = [];
+            }
+
+            integrate(maxSteps = 500, stepSize = 0.5) {
+                this.points = [{x: this.startX, y: this.startY}];
+                let x = this.startX;
+                let y = this.startY;
+
+                for (let i = 0; i < maxSteps; i++) {
+                    // Get gradient from all fields
+                    let gx = 0, gy = 0;
+                    for (const field of this.field) {
+                        const grad = field.gradient(x, y);
+                        gx += grad.x;
+                        gy += grad.y;
+                    }
+
+                    // Normalize
+                    const mag = Math.sqrt(gx * gx + gy * gy);
+                    if (mag > 0.001) {
+                        gx /= mag;
+                        gy /= mag;
+                    }
+
+                    // Step along gradient
+                    x += gx * stepSize;
+                    y += gy * stepSize;
+
+                    // Check bounds
+                    if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
+
+                    this.points.push({x, y});
+
+                    // Check for closure
+                    const dx = x - this.startX;
+                    const dy = y - this.startY;
+                    if (i > 10 && Math.sqrt(dx * dx + dy * dy) < 5) {
+                        this.points.push({x: this.startX, y: this.startY});
+                        break;
+                    }
+                }
+
+                return this.points;
+            }
+        }
+
+        // Generate field from text
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        function generateFromText(text) {
+            fields = [];
+            const hash = hashString(text);
+            const numFields = 5 + (hash % 8);
+            
+            for (let i = 0; i < numFields; i++) {
+                const seed = hash * (i + 1) * 7919; // Prime multiplier
+                const x = (seed % canvas.width);
+                const y = ((seed * 7) % canvas.height);
+                const amplitude = 50 + (seed % 100);
+                const sigma = 30 + (seed % 80);
+                const phase = (seed % 628) / 100;
+                const color = harmonic.getColor(phase);
+                
+                fields.push(new ScalarField(x, y, amplitude, sigma, color));
+            }
+        }
+
+        function generateRandom() {
+            fields = [];
+            const numFields = 5 + Math.floor(Math.random() * 8);
+            
+            for (let i = 0; i < numFields; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const amplitude = 30 + Math.random() * 70;
+                const sigma = 20 + Math.random() * 60;
+                const phase = Math.random() * Math.PI * 2;
+                const color = harmonic.getColor(phase);
+                
+                fields.push(new ScalarField(x, y, amplitude, sigma, color));
+            }
+        }
+
+        // Generate curves from fields
+        function generateCurves() {
+            curves = [];
+            if (fields.length === 0) return;
+
+            // Generate seed points
+            const seedCount = 50;
+            const gridSize = Math.ceil(Math.sqrt(seedCount));
+            const spacingX = canvas.width / (gridSize + 1);
+            const spacingY = canvas.height / (gridSize + 1);
+
+            for (let i = 1; i <= gridSize; i++) {
+                for (let j = 1; j <= gridSize; j++) {
+                    const x = i * spacingX;
+                    const y = j * spacingY;
+                    const integrator = new CurveIntegrator(fields, x, y);
+                    const points = integrator.integrate();
+                    if (points.length > 5) {
+                        curves.push(points);
+                    }
+                }
+            }
+        }
+
+        // Render
+        function render() {
+            // Clear with fade effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update wave schedulers
+            waveScheduler.evolve();
+            phaseScheduler.evolve();
+            
+            const wavePhase = waveScheduler.sample(waveScheduler.getState());
+            const harmonicPhase = phaseScheduler.sample(phaseScheduler.getState());
+            const intensity = parseFloat(document.getElementById('intensitySlider').value);
+            const fieldIntensity = intensity * (0.5 + 0.5 * Math.sin(wavePhase * 2 * Math.PI));
+            
+            time += 0.01;
+
+            // Draw fields as glowing points
+            for (const field of fields) {
+                const phase = harmonicPhase + time * 0.5;
+                
+                // Draw field center
+                ctx.beginPath();
+                ctx.arc(field.centerX, field.centerY, 5, 0, Math.PI * 2);
+                ctx.fillStyle = field.color;
+                ctx.fill();
+                
+                // Draw field gradient visualization
+                const grad = ctx.createRadialGradient(
+                    field.centerX, field.centerY, 0,
+                    field.centerX, field.centerY, field.sigma * 2
+                );
+                grad.addColorStop(0, field.color + '80');
+                grad.addColorStop(1, field.color + '00');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Draw curves
+            for (const curve of curves) {
+                if (curve.length < 2) continue;
+
+                ctx.beginPath();
+                ctx.moveTo(curve[0].x, curve[0].y);
+                
+                for (let i = 1; i < curve.length; i++) {
+                    // Use harmonic phase for color variation
+                    const t = i / curve.length;
+                    const phase = harmonicPhase + t * Math.PI * 2;
+                    const color = harmonic.getColor(phase, fieldIntensity);
+                    
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.lineTo(curve[i].x, curve[i].y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(curve[i].x, curve[i].y);
+                }
+            }
+
+            // Draw mouse interaction
+            if (isMouseDown) {
+                const phase = harmonicPhase;
+                const color = harmonic.getColor(phase);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        // Event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            mouseX = e.offsetX;
+            mouseY = e.offsetY;
+            
+            // Add field at mouse position
+            const phase = Math.random() * Math.PI * 2;
+            const color = harmonic.getColor(phase);
+            fields.push(new ScalarField(mouseX, mouseY, 50, 40, color));
+            generateCurves();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.offsetX;
+            mouseY = e.offsetY;
+            
+            if (isMouseDown) {
+                // Add trailing fields
+                if (Math.random() > 0.7) {
+                    const phase = Math.random() * Math.PI * 2;
+                    const color = harmonic.getColor(phase);
+                    fields.push(new ScalarField(mouseX, mouseY, 30, 30, color));
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            generateCurves();
+        });
+
+        // Control handlers
+        document.getElementById('freqSlider').addEventListener('input', (e) => {
+            const freq = parseFloat(e.target.value);
+            document.getElementById('freqValue').textContent = freq.toFixed(1);
+            // Update wave scheduler frequency
+        });
+
+        document.getElementById('phaseSlider').addEventListener('input', (e) => {
+            const phase = parseFloat(e.target.value);
+            document.getElementById('phaseValue').textContent = phase.toFixed(2);
+            harmonic.phase = phase;
+        });
+
+        document.getElementById('intensitySlider').addEventListener('input', (e) => {
+            const intensity = parseFloat(e.target.value);
+            document.getElementById('intensityValue').textContent = intensity.toFixed(1);
+        });
+
+        // Global functions for buttons
+        window.generateFromText = function() {
+            const text = document.getElementById('seedInput').value || 'mathematical beauty';
+            generateFromText(text);
+            generateCurves();
+        };
+
+        window.generateRandom = function() {
+            generateRandom();
+            generateCurves();
+        };
+
+        window.clearCanvas = function() {
+            fields = [];
+            curves = [];
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        };
+
+        // Initialize
+        generateFromText('mathematical beauty');
+        generateCurves();
+        render();
+    </script>
+</body>
+</html>
+
