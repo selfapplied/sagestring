@@ -9,8 +9,8 @@ import { BatemanReiss } from '../math/bateman_reiss.js';
 import { BRRenderer } from '../math/br_renderer.js';
 
 class BRVision extends Vision {
-  constructor(convolution, videoCapture, options = {}) {
-    super(convolution, videoCapture);
+  constructor(convolution, videoCapture, edgeTracker = null, sobel = null, gainScheduler = null, options = {}) {
+    super(convolution, videoCapture, edgeTracker, sobel, gainScheduler);
     
     this.br = new BatemanReiss(options.br || {});
     this.brRenderer = new BRRenderer(options.renderer || {});

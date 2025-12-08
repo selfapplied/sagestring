@@ -14,7 +14,7 @@ import {
     Sobel,
     Convolution,
     Vision
-} from '../src/sageString.js';
+} from '../../src/sageString.js';
 
 let kernelSystem;
 let vision;
@@ -71,20 +71,36 @@ function initializeCETower() {
 }
 
 async function startVideoCapture() {
+    if (!vision) {
+        console.error('Vision not initialized yet');
+        return;
+    }
+    
     const videoElement = document.getElementById('video-element');
     const overlayCanvas = document.getElementById('video-overlay');
     
-    await vision.start(videoElement, overlayCanvas, (kernel) => {
-        videoKernel = kernel;
-        updateRealTimeSVG(kernel);
-    });
+    if (!videoElement) {
+        console.error('Video element not found');
+        return;
+    }
     
-    document.getElementById('start-video-btn').disabled = true;
-    document.getElementById('stop-video-btn').disabled = false;
-    document.getElementById('video-container').style.display = 'block';
+    try {
+        await vision.start(videoElement, overlayCanvas, (kernel) => {
+            videoKernel = kernel;
+            updateRealTimeSVG(kernel);
+        });
+        
+        document.getElementById('start-video-btn').disabled = true;
+        document.getElementById('stop-video-btn').disabled = false;
+        document.getElementById('video-container').style.display = 'block';
+    } catch (error) {
+        console.error('Failed to start video capture:', error);
+        alert('Failed to start camera. Please check permissions and try again.');
+    }
 }
 
 function stopVideoCapture() {
+    if (!vision) return;
     vision.stop();
     document.getElementById('start-video-btn').disabled = false;
     document.getElementById('stop-video-btn').disabled = true;
@@ -105,9 +121,18 @@ function updateRealTimeSVG(kernel) {
     }
 }
 
-// Initialize on page load
-initializeCETower();
-
-// Make functions globally available
+// Make functions globally available immediately
 window.startVideoCapture = startVideoCapture;
 window.stopVideoCapture = stopVideoCapture;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initializeCETower();
+    
+    // Attach event listeners
+    const startBtn = document.getElementById('start-video-btn');
+    const stopBtn = document.getElementById('stop-video-btn');
+    if (startBtn) startBtn.addEventListener('click', startVideoCapture);
+    if (stopBtn) stopBtn.addEventListener('click', stopVideoCapture);
+});
+

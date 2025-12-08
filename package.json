@@ -8,7 +8,10 @@
     "test:math": "node tests/math/test_runner.js",
     "test:dom": "node tests/dom/test_runner.js",
     "test:canvas": "node tests/canvas/test_runner.js",
-    "test:webrtc": "node tests/webrtc/test_runner.js"
+    "test:webrtc": "node tests/webrtc/test_runner.js",
+    "test:e2e": "playwright test",
+    "serve": "python3 server.py 8000",
+    "dev": "python3 server.py 8000"
   },
   "keywords": [
     "edge-detection",
@@ -18,6 +21,11 @@
     "wavelet"
   ],
   "author": "Joel",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
 }
-

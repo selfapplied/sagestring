@@ -251,6 +251,23 @@
                 <button class="launch-btn">🎨 Launch Kernel System</button>
             </div>
 
+            <div class="system-card" onclick="launchSystem('sketch')">
+                <div class="system-icon">📝</div>
+                <h3 class="system-title">Sketch DSL</h3>
+                <p class="system-description">
+                    A gentle language for diagrams. Quiet verbs, lowercase keywords, gentle shapes.
+                    Feels like a sketchbook, not a contract.
+                </p>
+                <ul class="system-features">
+                    <li>Whisper-soft syntax</li>
+                    <li>Panel-based layout</li>
+                    <li>Element types: wavefield, spectrum, flow</li>
+                    <li>Real-time rendering</li>
+                    <li>Readable, breathable code</li>
+                </ul>
+                <button class="launch-btn">✍️ Open Sketch DSL</button>
+            </div>
+
             <div class="system-card" onclick="launchSystem('research')">
                 <div class="system-icon">🔬</div>
                 <h3 class="system-title">Research Overview</h3>
@@ -291,10 +308,11 @@
         function launchSystem(system) {
             const urls = {
                 'consolidated': 'sagestring_visual_systems.html',
-                'kaleidoscope': 'demos/mathematical_kaleidoscope.html',
-                'sobel': 'demos/sobel/sobel.html',
-                'kernel': 'demos/svg_kernel/svg_kernel_demo.html',
-                'research': 'README_visual_systems.md'
+                'kaleidoscope': 'demo/kaleid.html',
+                'sobel': 'demo/sobel/sobel.html',
+                'kernel': 'demo/svgkern/svgkern.html',
+                'sketch': 'demo/sketch.html',
+                'research': 'docs/visual.md'
             };
 
             if (urls[system]) {

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>411 Learning Constant Verification</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
+    h1, h2 {
+      color: #4a9eff;
+    }
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #1a1a1a;
+      border-left: 3px solid #4a9eff;
+    }
+    .output {
+      background: #0f0f0f;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5aaeff;
+    }
+    button:disabled {
+      background: #333;
+      cursor: not-allowed;
+    }
+    .constant {
+      color: #4aff9e;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .verified {
+      color: #4aff9e;
+    }
+    .error {
+      color: #ff4a9e;
+    }
+    .system-result {
+      margin: 10px 0;
+      padding: 10px;
+      background: #0f0f0f;
+      border-left: 2px solid #4a9eff;
+    }
+    .progress {
+      width: 100%;
+      height: 20px;
+      background: #0f0f0f;
+      border: 1px solid #4a9eff;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #4aff9e;
+      transition: width 0.3s;
+    }
+    canvas {
+      background: #0f0f0f;
+      border: 1px solid #4a9eff;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>411 Learning Constant Verification</h1>
+  
+  <div class="section">
+    <h2>The CE1 Learning Law</h2>
+    <p><strong class="constant">N_learn = γ/ZP ≈ 411</strong></p>
+    <p>This is the universal learning constant for CE1 systems.</p>
+    <p>Learning is <strong>curvature flow</strong>: each example reduces curvature by ZP.</p>
+    <p>Initial curvature is γ. When curvature reaches zero, learning is complete.</p>
+    <p>Total examples needed: <span class="constant">γ/ZP ≈ 411</span></p>
+  </div>
+
+  <div class="section">
+    <h2>Controls</h2>
+    <button id="run-btn" onclick="runExperiment()">Run Experiment</button>
+    <button id="stop-btn" onclick="stopExperiment()" disabled>Stop</button>
+    <button onclick="clearOutput()">Clear</button>
+  </div>
+
+  <div class="section">
+    <h2>Progress</h2>
+    <div class="progress">
+      <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+    </div>
+    <div id="progress-text">Ready to run...</div>
+  </div>
+
+  <div class="section">
+    <h2>Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Output</h2>
+    <div id="output" class="output"></div>
+  </div>
+
+  <div class="section">
+    <h2>Visualization</h2>
+    <canvas id="curvature-chart" width="800" height="400"></canvas>
+    <canvas id="knowledge-chart" width="800" height="400"></canvas>
+  </div>
+
+  <script type="module">
+    import {
+      LearningExperiment,
+      N_LEARN,
+      GAMMA,
+      ZP
+    } from '../../src/sageString.js';
+
+    let experiment = null;
+    let running = false;
+    let animationFrame = null;
+
+    function log(message) {
+      const output = document.getElementById('output');
+      output.textContent += message + '\n';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearOutput() {
+      document.getElementById('output').textContent = '';
+      document.getElementById('results').innerHTML = '';
+    }
+
+    function updateProgress(current, total, systemName) {
+      const percent = (current / total) * 100;
+      document.getElementById('progress-bar').style.width = percent + '%';
+      document.getElementById('progress-text').textContent = 
+        `Running ${systemName}... ${current}/${total} examples (${percent.toFixed(1)}%)`;
+    }
+
+    function displayResults(analysis) {
+      const resultsDiv = document.getElementById('results');
+      let html = '<h3>Summary</h3>';
+      
+      html += `<div class="system-result">`;
+      html += `<strong>Expected N_learn:</strong> <span class="constant">${N_LEARN.toFixed(3)}</span><br>`;
+      html += `<strong>Mean Convergence N:</strong> ${analysis.summary.meanConvergenceN.toFixed(2)}<br>`;
+      html += `<strong>Standard Deviation:</strong> ${analysis.summary.stdConvergenceN.toFixed(2)}<br>`;
+      html += `<strong>Mean Error:</strong> ${analysis.summary.meanError.toFixed(2)}<br>`;
+      html += `<strong>Max Error:</strong> ${analysis.summary.maxError.toFixed(2)}<br>`;
+      html += `<strong>Relative Error:</strong> ${(analysis.summary.relativeError * 100).toFixed(2)}%<br>`;
+      
+      if (analysis.summary.verified) {
+        html += `<br><strong class="verified">✓ VERIFIED: Constant holds within tolerance!</strong>`;
+      } else {
+        html += `<br><strong class="error">✗ Not verified: Error too large</strong>`;
+      }
+      html += `</div>`;
+      
+      html += '<h3>System Results</h3>';
+      for (const system of analysis.systems) {
+        html += `<div class="system-result">`;
+        html += `<strong>${system.systemName}</strong><br>`;
+        if (system.converged) {
+          html += `Converged at N = <span class="constant">${system.convergenceN}</span><br>`;
+          html += `Error: ${system.error.toFixed(2)} (${(system.relativeError * 100).toFixed(2)}%)<br>`;
+        } else {
+          html += `<span class="error">Did not converge</span><br>`;
+        }
+        html += `</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    function drawChart(canvasId, data, label, color = '#4aff9e') {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      if (data.length === 0) return;
+      
+      // Find min/max
+      const values = data.map(d => d.value);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min || 1;
+      
+      // Draw axes
+      ctx.strokeStyle = '#4a9eff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(50, height - 50);
+      ctx.lineTo(width - 50, height - 50);
+      ctx.moveTo(50, 50);
+      ctx.lineTo(50, height - 50);
+      ctx.stroke();
+      
+      // Draw curve
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      for (let i = 0; i < data.length; i++) {
+        const x = 50 + (i / data.length) * (width - 100);
+        const y = height - 50 - ((data[i].value - min) / range) * (height - 100);
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      
+      ctx.stroke();
+      
+      // Draw labels
+      ctx.fillStyle = '#e0e0e0';
+      ctx.font = '12px monospace';
+      ctx.fillText(label, 60, 30);
+      ctx.fillText(`Min: ${min.toFixed(3)}`, 60, height - 20);
+      ctx.fillText(`Max: ${max.toFixed(3)}`, width - 150, height - 20);
+    }
+
+    async function runExperiment() {
+      if (running) return;
+      
+      running = true;
+      document.getElementById('run-btn').disabled = true;
+      document.getElementById('stop-btn').disabled = false;
+      
+      clearOutput();
+      log('=== 411 Learning Constant Verification ===\n');
+      log(`Expected N_learn = γ/ZP = ${GAMMA.toFixed(6)} / ${ZP.toFixed(6)} = ${N_LEARN.toFixed(3)}\n`);
+      
+      experiment = new LearningExperiment();
+      
+      // Run with progress updates
+      const maxExamples = 1000;
+      let currentSystem = 0;
+      
+      for (const system of experiment.systems) {
+        currentSystem++;
+        const systemName = system.system.id.toString();
+        log(`\nRunning ${systemName}...`);
+        
+        let n = 0;
+        while (!system.converged && n < maxExamples) {
+          if (!running) {
+            log('Experiment stopped by user.');
+            return;
+          }
+          
+          const example = system.generateExample();
+          system.addExample(example);
+          n++;
+          
+          // Update progress every 10 steps
+          if (n % 10 === 0) {
+            updateProgress(n, maxExamples, systemName);
+            
+            // Update charts
+            if (system.stats.coordinateEvolution.length > 0) {
+              const curvatureData = system.curvature.history.map(h => ({
+                value: h.curvature
+              }));
+              const knowledgeData = system.knowledge.history.map(h => ({
+                value: h.knowledge
+              }));
+              
+              drawChart('curvature-chart', curvatureData, 'Curvature R(n)', '#ff4a9e');
+              drawChart('knowledge-chart', knowledgeData, 'Knowledge K(n)', '#4aff9e');
+            }
+            
+            // Small delay for visualization
+            await new Promise(resolve => setTimeout(resolve, 10));
+          }
+        }
+        
+        if (system.converged) {
+          log(`  ✓ Converged at N = ${system.convergenceN}`);
+          log(`  Error: ${system.error.toFixed(2)} (${(system.relativeError * 100).toFixed(2)}%)`);
+        } else {
+          log(`  ✗ Did not converge after ${maxExamples} examples`);
+        }
+      }
+      
+      // Analyze results
+      log('\n=== Analysis ===');
+      const analysis = experiment.analyze();
+      
+      log(`\nSystems tested: ${analysis.summary.totalSystems}`);
+      log(`Converged: ${analysis.summary.converged}`);
+      log(`Mean convergence N: ${analysis.summary.meanConvergenceN.toFixed(2)}`);
+      log(`Standard deviation: ${analysis.summary.stdConvergenceN.toFixed(2)}`);
+      log(`Mean error: ${analysis.summary.meanError.toFixed(2)}`);
+      log(`Max error: ${analysis.summary.maxError.toFixed(2)}`);
+      log(`Relative error: ${(analysis.summary.relativeError * 100).toFixed(2)}%`);
+      
+      if (analysis.summary.verified) {
+        log(`\n✓ VERIFIED: The 411 constant holds!`);
+      } else {
+        log(`\n✗ Not verified: Error too large`);
+      }
+      
+      displayResults(analysis);
+      
+      // Final charts
+      if (experiment.systems[0].converged) {
+        const firstSystem = experiment.systems[0];
+        const curvatureData = firstSystem.curvature.history.map(h => ({
+          value: h.curvature
+        }));
+        const knowledgeData = firstSystem.knowledge.history.map(h => ({
+          value: h.knowledge
+        }));
+        
+        drawChart('curvature-chart', curvatureData, 'Curvature R(n) = γ·e^(-ZP·n)', '#ff4a9e');
+        drawChart('knowledge-chart', knowledgeData, 'Knowledge K(n)', '#4aff9e');
+      }
+      
+      running = false;
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('stop-btn').disabled = true;
+      updateProgress(100, 100, 'Complete');
+    }
+
+    function stopExperiment() {
+      running = false;
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('stop-btn').disabled = true;
+      log('\nExperiment stopped.');
+    }
+
+    // Make functions available globally
+    window.runExperiment = runExperiment;
+    window.stopExperiment = stopExperiment;
+    window.clearOutput = clearOutput;
+  </script>
+</body>
+</html>
+

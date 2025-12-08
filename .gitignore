@@ -1,49 +1,29 @@
-# Virtual environment
+# Dependencies
+node_modules/
 .venv/
-venv/
-env/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
+# Build outputs
+dist/
+build/
+*.log
 
-# Generated plots and data
-*.png
-*.jpg
-*.jpeg
-*.svg
-*.pdf
-antclock_geometry.png
-antclock_trajectory.png
-topology_evolution.png
-coupling_law_evolution.png
-categorical_shadow_structure.png
-critical_line_analogue.png
-critical_line_evidence.png
+# Server files
+.server_ready
+.server_pid
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+# Test results
+test-results/
+playwright-report/
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# IDE
+.vscode/
+.idea/
 
-# Temporary files
-*.tmp
-*.temp
-
-# Server readiness files
-.server_ready
-
-# Matplotlib cache
+# Cache
 .matplotlib_cache/
+*.pyc
+__pycache__/

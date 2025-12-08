@@ -103,18 +103,48 @@ class BatemanReiss {
     }
     
     // Boundary: use forward/backward differences
+    // Top and bottom edges
     for (let x = 0; x < size; x++) {
       const top = x;
       const bottom = (size - 1) * size + x;
-      uy[top] = field[size + x] - field[top];
-      uy[bottom] = field[bottom] - field[(size - 2) * size + x];
+      if (size > 1) {
+        uy[top] = field[size + x] - field[top];
+        uy[bottom] = field[bottom] - field[(size - 2) * size + x];
+      } else {
+        uy[top] = 0;
+        uy[bottom] = 0;
+      }
+      // Also compute ux for boundary points
+      if (x > 0 && x < size - 1) {
+        ux[top] = (field[x + 1] - field[x - 1]) / 2;
+        ux[bottom] = (field[(size - 1) * size + x + 1] - field[(size - 1) * size + x - 1]) / 2;
+      } else {
+        ux[top] = x < size - 1 ? field[x + 1] - field[x] : field[x] - field[x - 1];
+        ux[bottom] = x < size - 1 ? field[(size - 1) * size + x + 1] - field[(size - 1) * size + x] : 
+                                    field[(size - 1) * size + x] - field[(size - 1) * size + x - 1];
+      }
     }
     
+    // Left and right edges
     for (let y = 0; y < size; y++) {
       const left = y * size;
       const right = y * size + (size - 1);
-      ux[left] = field[y * size + 1] - field[left];
-      ux[right] = field[right] - field[y * size + (size - 2)];
+      if (size > 1) {
+        ux[left] = field[y * size + 1] - field[left];
+        ux[right] = field[right] - field[y * size + (size - 2)];
+      } else {
+        ux[left] = 0;
+        ux[right] = 0;
+      }
+      // Also compute uy for boundary points (if not already set)
+      if (y > 0 && y < size - 1) {
+        if (uy[left] === 0) uy[left] = (field[(y + 1) * size] - field[(y - 1) * size]) / 2;
+        if (uy[right] === 0) uy[right] = (field[(y + 1) * size + size - 1] - field[(y - 1) * size + size - 1]) / 2;
+      } else {
+        if (uy[left] === 0) uy[left] = y < size - 1 ? field[(y + 1) * size] - field[left] : field[left] - field[(y - 1) * size];
+        if (uy[right] === 0) uy[right] = y < size - 1 ? field[(y + 1) * size + size - 1] - field[right] : 
+                                                          field[right] - field[(y - 1) * size + size - 1];
+      }
     }
     
     return { ux, uy };

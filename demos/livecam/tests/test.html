@@ -13,16 +13,28 @@
     <h1>Livecam System Test</h1>
     <div id="results"></div>
 
-    <script src="../../../src/dom/svg_parser.js"></script>
-    <script src="../../../src/canvas/lattice.js"></script>
-    <script src="../../../src/math/convolution.js"></script>
-    <script src="../../../src/math/sobel.js"></script>
-    <script src="../../../src/math/renderer.js"></script>
-    <script src="../../../src/webrtc/video.js"></script>
-    <script src="../../../src/math/spacetime_scale.js"></script>
-    <script src="../../../src/math/edge_tracker.js"></script>
-    <script src="../../../livecam/liveCam.js"></script>
-    <script src="../../../src/webrtc/vision.js"></script>
+    <script type="module">
+        import {
+            SVGKernelSystem,
+            VideoCapture,
+            Convolution,
+            Sobel,
+            LatticeRenderer,
+            SpacetimeScale,
+            EdgeTracker,
+            Vision
+        } from '../../../src/sageString.js';
+        
+        // Make classes globally available for tests
+        window.SVGKernelSystem = SVGKernelSystem;
+        window.VideoCapture = VideoCapture;
+        window.Convolution = Convolution;
+        window.Sobel = Sobel;
+        window.LatticeRenderer = LatticeRenderer;
+        window.SpacetimeScale = SpacetimeScale;
+        window.EdgeTracker = EdgeTracker;
+        window.Vision = Vision;
+    </script>
     
     <script>
         const results = document.getElementById('results');

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketch DSL: Gentle Diagram Language</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00ff88;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #00ff88, #00aaff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #00aaff;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        canvas {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        button:hover {
+            background: #00aaff;
+            transform: scale(1.05);
+        }
+
+        .example {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .example:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Sketch DSL</h1>
+            <p style="font-size: 1.2rem; opacity: 0.8;">A Gentle Language for Diagrams</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>✍️ Write Your Sketch</h2>
+                <div class="example" onclick="loadExample('ecology')">🌊 Ecological Energy Landscape</div>
+                <div class="example" onclick="loadExample('simple')">✨ Simple Example</div>
+                <textarea id="sketchInput" placeholder="diagram &quot;your diagram&quot;&#10;size 1600x900&#10;&#10;panel left &quot;title&quot;&#10;  element waves type wavefield&#10;    color &quot;blue, orange&quot;&#10;  end&#10;end"></textarea>
+                <button onclick="renderSketch()">🎨 Render</button>
+            </div>
+
+            <div class="panel">
+                <h2>🎨 Rendered Diagram</h2>
+                <canvas id="diagramCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Sketch Parser (simplified inline version)
+        class SketchParser {
+            parse(text) {
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'));
+                const diagram = { title: null, size: { width: 1600, height: 900 }, panels: [], law: null };
+                let currentPanel = null;
+                let currentElement = null;
+                
+                for (const line of lines) {
+                    const words = line.split(/\s+/);
+                    const verb = words[0];
+                    
+                    if (verb === 'diagram') {
+                        diagram.title = this.extractQuoted(words.slice(1).join(' '));
+                    } else if (verb === 'size' && words[1].includes('x')) {
+                        const [w, h] = words[1].split('x').map(Number);
+                        diagram.size = { width: w, height: h };
+                    } else if (verb === 'panel') {
+                        currentPanel = {
+                            position: words[1],
+                            title: this.extractQuoted(words.slice(2).join(' ')),
+                            note: null,
+                            caption: null,
+                            elements: []
+                        };
+                        diagram.panels.push(currentPanel);
+                    } else if (verb === 'end' && currentPanel) {
+                        currentPanel = null;
+                        currentElement = null;
+                    } else if (verb === 'note' && currentPanel) {
+                        currentPanel.note = this.extractQuoted(line.substring(verb.length).trim());
+                    } else if (verb === 'caption' && currentPanel) {
+                        currentPanel.caption = this.extractQuoted(line.substring(verb.length).trim());
+                    } else if (verb === 'element') {
+                        currentElement = {
+                            name: words[1],
+                            type: words[3] || words[2],
+                            properties: {}
+                        };
+                        if (currentPanel) currentPanel.elements.push(currentElement);
+                    } else if (verb === 'end' && currentElement) {
+                        currentElement = null;
+                    } else if (currentElement && words.length >= 2) {
+                        const key = words[0];
+                        const value = this.parseValue(words.slice(1).join(' '));
+                        currentElement.properties[key] = value;
+                    } else if (verb === 'law') {
+                        diagram.law = { name: words[1], equation: null, notes: [], caption: null };
+                    } else if (verb === 'equation' && diagram.law) {
+                        diagram.law.equation = this.extractQuoted(line.substring(verb.length).trim());
+                    }
+                }
+                
+                return diagram;
+            }
+            
+            extractQuoted(text) {
+                const match = text.match(/"([^"]+)"/);
+                return match ? match[1] : text;
+            }
+            
+            parseValue(text) {
+                if (text.startsWith('"') && text.endsWith('"')) return text.slice(1, -1);
+                if (!isNaN(text)) return Number(text);
+                if (text === 'true') return true;
+                if (text === 'false') return false;
+                if (text.includes(',')) return text.split(',').map(s => this.parseValue(s.trim()));
+                if (text.includes('..')) {
+                    const [start, end] = text.split('..').map(Number);
+                    return { range: true, start, end };
+                }
+                return text;
+            }
+        }
+
+        // Sketch Renderer
+        class SketchRenderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+            }
+            
+            render(diagram) {
+                this.canvas.width = diagram.size.width;
+                this.canvas.height = diagram.size.height;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Title
+                if (diagram.title) {
+                    this.ctx.fillStyle = '#00ff88';
+                    this.ctx.font = 'bold 24px monospace';
+                    this.ctx.fillText(diagram.title, 20, 40);
+                }
+                
+                // Render panels
+                diagram.panels.forEach(panel => this.renderPanel(panel, diagram.size));
+                
+                // Render law
+                if (diagram.law) {
+                    this.renderLaw(diagram.law, diagram.size);
+                }
+            }
+            
+            renderPanel(panel, size) {
+                const bounds = this.getPanelBounds(panel.position, size);
+                
+                // Background
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                this.ctx.strokeStyle = '#00ff88';
+                this.ctx.lineWidth = 2;
+                this.ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                this.ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                
+                // Title
+                this.ctx.fillStyle = '#00aaff';
+                this.ctx.font = 'bold 18px monospace';
+                this.ctx.fillText(panel.title, bounds.x + 20, bounds.y + 30);
+                
+                // Note
+                if (panel.note) {
+                    this.ctx.fillStyle = '#888';
+                    this.ctx.font = '12px monospace';
+                    this.ctx.fillText(panel.note, bounds.x + 20, bounds.y + 60);
+                }
+                
+                // Elements
+                panel.elements.forEach((el, i) => {
+                    this.renderElement(el, bounds, i);
+                });
+                
+                // Caption
+                if (panel.caption) {
+                    this.ctx.fillStyle = '#666';
+                    this.ctx.font = 'italic 11px monospace';
+                    this.ctx.fillText(panel.caption, bounds.x + 20, bounds.y + bounds.height - 20);
+                }
+            }
+            
+            getPanelBounds(position, size) {
+                const { width, height } = size;
+                const padding = 20;
+                
+                if (position === 'left') {
+                    return { x: padding, y: 100, width: width / 2 - padding * 1.5, height: height - 120 };
+                } else if (position === 'right') {
+                    return { x: width / 2 + padding / 2, y: 100, width: width / 2 - padding * 1.5, height: height - 120 };
+                } else if (position === 'center') {
+                    return { x: padding, y: height / 2, width: width - padding * 2, height: height / 2 - 20 };
+                } else if (position === 'top') {
+                    return { x: padding, y: padding, width: width - padding * 2, height: 80 };
+                }
+                return { x: padding, y: padding, width: width - padding * 2, height: height - padding * 2 };
+            }
+            
+            renderElement(element, bounds, index) {
+                const y = bounds.y + 100 + index * 200;
+                const x = bounds.x + 20;
+                const w = bounds.width - 40;
+                const h = 180;
+                
+                switch (element.type) {
+                    case 'wavefield':
+                        this.renderWavefield(element, x, y, w, h);
+                        break;
+                    case 'potential_well':
+                        this.renderPotentialWell(element, x, y, w, h);
+                        break;
+                    case 'bar_spectrum':
+                        this.renderBarSpectrum(element, x, y, w, h);
+                        break;
+                    case 'decay_curve':
+                        this.renderDecayCurve(element, x, y, w, h);
+                        break;
+                    case 'ribbon_flow':
+                        this.renderRibbonFlow(element, x, y, w, h);
+                        break;
+                    case 'text_block':
+                        this.renderTextBlock(element, x, y, w, h);
+                        break;
+                }
+            }
+            
+            renderWavefield(element, x, y, w, h) {
+                const colors = element.properties.color || ['#00aaff'];
+                this.ctx.strokeStyle = colors[0];
+                this.ctx.lineWidth = 1;
+                
+                for (let i = 0; i < 50; i++) {
+                    this.ctx.beginPath();
+                    const sx = x + Math.random() * w;
+                    const sy = y + Math.random() * h;
+                    this.ctx.moveTo(sx, sy);
+                    for (let j = 0; j < 10; j++) {
+                        this.ctx.lineTo(sx + (Math.random() - 0.5) * 50, sy + (Math.random() - 0.5) * 50);
+                    }
+                    this.ctx.stroke();
+                }
+            }
+            
+            renderPotentialWell(element, x, y, w, h) {
+                const centerX = x + w / 2;
+                const centerY = y + h / 2;
+                
+                this.ctx.strokeStyle = '#ff6b6b';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                for (let i = 0; i < w; i++) {
+                    const px = x + i;
+                    const dx = (i - w / 2) / 50;
+                    const py = centerY + 30 * (dx * dx - 1);
+                    if (i === 0) this.ctx.moveTo(px, py);
+                    else this.ctx.lineTo(px, py);
+                }
+                this.ctx.stroke();
+            }
+            
+            renderBarSpectrum(element, x, y, w, h) {
+                const numBins = 20;
+                const binWidth = w / numBins;
+                const colors = element.properties.colors || ['#00aaff'];
+                
+                for (let i = 0; i < numBins; i++) {
+                    const amplitude = Math.random() > 0.7 ? Math.random() * 0.9 + 0.1 : Math.random() * 0.1;
+                    const barHeight = amplitude * h;
+                    this.ctx.fillStyle = colors[i % colors.length];
+                    this.ctx.fillRect(x + i * binWidth, y + h - barHeight, binWidth - 2, barHeight);
+                }
+            }
+            
+            renderDecayCurve(element, x, y, w, h) {
+                const orders = element.properties.orders;
+                const maxOrder = orders?.end || 10;
+                
+                this.ctx.strokeStyle = '#00aaff';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                
+                for (let z = 1; z <= maxOrder; z++) {
+                    const decay = Math.exp(-0.3 * z);
+                    const px = x + (z / maxOrder) * w;
+                    const py = y + h - 20 - decay * (h - 40);
+                    if (z === 1) this.ctx.moveTo(px, py);
+                    else this.ctx.lineTo(px, py);
+                }
+                this.ctx.stroke();
+            }
+            
+            renderRibbonFlow(element, x, y, w, h) {
+                const gradient = this.ctx.createLinearGradient(x, y, x + w, y);
+                gradient.addColorStop(0, '#00aaff');
+                gradient.addColorStop(1, '#ff6b6b');
+                
+                this.ctx.strokeStyle = gradient;
+                this.ctx.lineWidth = 3;
+                
+                for (let i = 0; i < 5; i++) {
+                    const py = y + (h / 6) * (i + 1);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, py);
+                    this.ctx.lineTo(x + w, py);
+                    this.ctx.lineTo(x + w - 10, py - 5);
+                    this.ctx.moveTo(x + w, py);
+                    this.ctx.lineTo(x + w - 10, py + 5);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.fillStyle = '#00ff88';
+                this.ctx.font = '20px monospace';
+                this.ctx.fillText('{ [ ( < > ) ] }', x + w / 2 - 50, y + h / 2);
+            }
+            
+            renderTextBlock(element, x, y, w, h) {
+                const text = element.properties.text || element.properties.equation || '';
+                this.ctx.fillStyle = '#00ff88';
+                this.ctx.font = '18px monospace';
+                this.ctx.fillText(text, x, y + h / 2);
+            }
+            
+            renderLaw(law, size) {
+                const y = size.height - 80;
+                if (law.equation) {
+                    this.ctx.fillStyle = '#00ff88';
+                    this.ctx.font = '16px monospace';
+                    this.ctx.fillText(law.equation, 20, y);
+                }
+                if (law.caption) {
+                    this.ctx.fillStyle = '#666';
+                    this.ctx.font = 'italic 12px monospace';
+                    this.ctx.fillText(law.caption, 20, y + 25);
+                }
+            }
+        }
+
+        // Examples
+        const examples = {
+            ecology: `diagram "ecological energy landscapes"
+
+size 1600x900
+
+panel left "the tangled world"
+  note "morphotaxonomy as time-domain sampling; precise but heavy"
+  caption "structural enumeration, limited by the eye"
+
+  element waves type wavefield
+    color "blue, orange"
+    complexity high
+    opacity 0.8
+    style "scribbled overlapping"
+    label "species ids as sparse anchors"
+  end
+
+  element basin type potential_well
+    wells 3
+    labels "common, indicator, rare"
+    depth varied
+    highlight "known species"
+    label "species-level diatoms as potential minima"
+  end
+end
+
+panel right "the harmonic world"
+  note "metabarcoding as frequency-domain sampling; strong kinetic signal"
+  caption "presence as amplitude; turnover as frequency energy"
+
+  element spectrum type bar_spectrum
+    stacks 3
+    dynamic_range high
+    show_missing true
+    colors "cyan, magenta, orange"
+    label "dna reads as spectral amplitudes"
+  end
+
+  element zeta type decay_curve
+    family powerlaw
+    orders 1..8
+    gradient "cool to warm"
+    show_points true
+    label "zeta diversity decay"
+  end
+end
+
+panel center "the bridge"
+  note "ce1 kernel replaces fourier; energy ties the domains together"
+  caption "a transform where identity is incomplete but energy persists"
+
+  element ribbons type ribbon_flow
+    direction left_to_right
+    gradient "blue to orange"
+    turbulence left_high right_low
+    through "ce1 kernel"
+    label "flow from structure to spectrum"
+  end
+
+  element kernel type text_block
+    style soft_box
+    equation "H = Σ (T_i + V_i)"
+  end
+end
+
+law zeta_cheeger
+  equation "λ₂ ↔ zeta decay   ;   h(G) ↔ environmental filtering"
+  note "niche differentiation as the ecological sparsest cut"
+  note "spectral slope reveals recurrence curvature"
+  caption "assembly curvature emerges from spectral recurrence"
+end
+
+panel top "summary"
+  note "a dual energy field of community assembly"
+  caption "identity (morphotax) · presence (meta) · change (zeta) · curvature (environment)"
+
+  element thesis type text_block
+    align center
+    size large
+    text "structure vs spectrum in ecology"
+  end
+end`,
+
+            simple: `diagram "simple example"
+
+size 800x600
+
+panel left "left side"
+  note "this is the left panel"
+  
+  element waves type wavefield
+    color "blue"
+  end
+end
+
+panel right "right side"
+  note "this is the right panel"
+  
+  element spectrum type bar_spectrum
+    colors "cyan, magenta"
+  end
+end
+end`
+        };
+
+        const parser = new SketchParser();
+        const renderer = new SketchRenderer(document.getElementById('diagramCanvas'));
+
+        window.renderSketch = function() {
+            const text = document.getElementById('sketchInput').value;
+            try {
+                const diagram = parser.parse(text);
+                renderer.render(diagram);
+            } catch (error) {
+                alert('Error: ' + error.message);
+                console.error(error);
+            }
+        };
+
+        window.loadExample = function(name) {
+            document.getElementById('sketchInput').value = examples[name] || '';
+            renderSketch();
+        };
+
+        // Load default example
+        loadExample('ecology');
+    </script>
+</body>
+</html>
+

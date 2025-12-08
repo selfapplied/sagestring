@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        video {
+            width: 640px;
+            height: 480px;
+            background: #111;
+            border: 2px solid #0f0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Camera Test</h1>
+    <div class="status" id="status">Ready</div>
+    <button id="start-btn" onclick="startCamera()">Start Camera</button>
+    <button id="stop-btn" onclick="stopCamera()" disabled>Stop Camera</button>
+    <br><br>
+    <video id="video" autoplay muted playsinline></video>
+
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
+        const status = document.getElementById('status');
+
+        async function startCamera() {
+            try {
+                status.textContent = 'Requesting camera...';
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = stream;
+                
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve).catch(reject);
+                    };
+                    video.onerror = reject;
+                    setTimeout(() => reject(new Error('Timeout')), 5000);
+                });
+                
+                status.textContent = `Camera active: ${video.videoWidth}x${video.videoHeight}`;
+                document.getElementById('start-btn').disabled = true;
+                document.getElementById('stop-btn').disabled = false;
+            } catch (error) {
+                status.textContent = `Error: ${error.message}`;
+                console.error('Camera error:', error);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.srcObject = null;
+            status.textContent = 'Camera stopped';
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+        }
+    </script>
+</body>
+</html>
+
+
+
+

@@ -16,16 +16,31 @@ class VideoCapture {
   async start(videoElement, options = {}) {
     this.videoElement = videoElement;
     
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: options.width || 640 },
-        height: { ideal: options.height || 480 },
-        facingMode: options.facingMode || 'user'
-      }
-    });
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: options.width || 640 },
+          height: { ideal: options.height || 480 },
+          facingMode: options.facingMode || 'user'
+        }
+      });
 
-    videoElement.srcObject = this.stream;
-    videoElement.play();
+      videoElement.srcObject = this.stream;
+      
+      // Wait for video to be ready
+      await new Promise((resolve, reject) => {
+        videoElement.onloadedmetadata = () => {
+          videoElement.play().then(resolve).catch(reject);
+        };
+        videoElement.onerror = reject;
+        
+        // Timeout after 5 seconds
+        setTimeout(() => reject(new Error('Video load timeout')), 5000);
+      });
+    } catch (error) {
+      console.error('Error starting video capture:', error);
+      throw error;
+    }
   }
 
   /**
@@ -43,10 +58,18 @@ class VideoCapture {
    */
   captureFrame() {
     if (!this.videoElement) return null;
+    
+    // Check if video is ready
+    if (this.videoElement.readyState < 2) return null;
+    
+    const width = this.videoElement.videoWidth;
+    const height = this.videoElement.videoHeight;
+    
+    if (!width || !height || width === 0 || height === 0) return null;
 
     const canvas = document.createElement('canvas');
-    canvas.width = this.videoElement.videoWidth || 640;
-    canvas.height = this.videoElement.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(this.videoElement, 0, 0);
     

@@ -1,6 +1,6 @@
 # Guardian Consciousness Ecology - Development Makefile
 
-.PHONY: server demo clean help open quantum ecology diatom test test-e2e
+.PHONY: server demo clean help open quantum ecology diatom kernel sketch test test-e2e
 
 # Configuration
 PORT := 10000
@@ -78,7 +78,7 @@ quantum:
 			sleep 1; \
 		fi; \
 		echo "🌐 Opening quantum learning demo..."; \
-		open http://localhost:$(PORT)/demos/quantum_learning.html; \
+		open http://localhost:$(PORT)/demo/quantum.html; \
 		echo "✅ Quantum learning demo opened!"; \
 		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
 	else \
@@ -98,7 +98,7 @@ ecology:
 			sleep 1; \
 		fi; \
 		echo "🌐 Opening ecological energy landscape..."; \
-		open http://localhost:$(PORT)/demos/ecological_energy_landscape.html; \
+		open http://localhost:$(PORT)/demo/ecology.html; \
 		echo "✅ Ecological energy landscape opened!"; \
 		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
 	else \
@@ -118,8 +118,48 @@ diatom:
 			sleep 1; \
 		fi; \
 		echo "🌐 Opening diatom computing demo..."; \
-		open http://localhost:$(PORT)/demos/diatom_computing.html; \
+		open http://localhost:$(PORT)/demo/diatom.html; \
 		echo "✅ Diatom computing demo opened!"; \
+		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
+	else \
+		echo "❌ Python3 not found. Please install Python 3."; \
+		exit 1; \
+	fi
+
+# Open CE1 kernel binding demo
+kernel:
+	@echo "🔗 Opening CE1 Kernel Binding demo..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		if ! curl -s http://localhost:$(PORT) >/dev/null 2>&1; then \
+			echo "📡 Starting HTTP server on port $(PORT)..."; \
+			python3 server.py $(PORT) >/dev/null 2>&1 & \
+			SERVER_PID=$$!; \
+			echo $$SERVER_PID > .server_pid; \
+			sleep 1; \
+		fi; \
+		echo "🌐 Opening CE1 kernel binding demo..."; \
+		open http://localhost:$(PORT)/demo/kernel.html; \
+		echo "✅ CE1 kernel binding demo opened!"; \
+		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
+	else \
+		echo "❌ Python3 not found. Please install Python 3."; \
+		exit 1; \
+	fi
+
+# Open sketch DSL demo
+sketch:
+	@echo "📝 Opening Sketch DSL demo..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		if ! curl -s http://localhost:$(PORT) >/dev/null 2>&1; then \
+			echo "📡 Starting HTTP server on port $(PORT)..."; \
+			python3 server.py $(PORT) >/dev/null 2>&1 & \
+			SERVER_PID=$$!; \
+			echo $$SERVER_PID > .server_pid; \
+			sleep 1; \
+		fi; \
+		echo "🌐 Opening sketch DSL demo..."; \
+		open http://localhost:$(PORT)/demo/sketch.html; \
+		echo "✅ Sketch DSL demo opened!"; \
 		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
 	else \
 		echo "❌ Python3 not found. Please install Python 3."; \
@@ -161,6 +201,8 @@ help:
 	@echo "  quantum         - Open quantum learning demo"
 	@echo "  ecology         - Open ecological energy landscape"
 	@echo "  diatom          - Open diatom computing demo"
+	@echo "  kernel          - Open CE1 kernel binding demo"
+	@echo "  sketch          - Open sketch DSL demo"
 	@echo "  test            - Run E2E tests"
 	@echo "  test-e2e        - Run E2E tests (alias)"
 	@echo "  clean           - Stop background server processes and clean files"
@@ -174,5 +216,7 @@ help:
 	@echo "  make quantum      # Open quantum learning demo"
 	@echo "  make ecology      # Open ecological energy landscape"
 	@echo "  make diatom       # Open diatom computing demo"
+	@echo "  make kernel       # Open CE1 kernel binding demo"
+	@echo "  make sketch       # Open sketch DSL demo"
 	@echo "  make test         # Run E2E tests"
 	@echo "  make clean        # Stop server and clean files"

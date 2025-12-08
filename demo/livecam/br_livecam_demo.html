@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bateman-Reiss Self-Boundary Livecam</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 20px;
+            border-bottom: 2px solid #4ecdc4;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        .header p {
+            font-size: 14px;
+            color: #888;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .video-container {
+            background: #1a1a1a;
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+            padding: 20px;
+            display: none;
+        }
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        #video-element {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #000;
+        }
+        #video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4ecdc4;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: #45b7d1;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .info-panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .info-panel h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .info-panel p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #aaa;
+        }
+        .svg-overlay-container {
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin-top: 20px;
+            min-height: 400px;
+            padding: 10px;
+        }
+        #svg-overlay {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🜂 Bateman-Reiss Self-Boundary Livecam</h1>
+        <p>A self-aware morphic membrane that sees you and reflects you back gently</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <button id="start-video-btn">Start Camera</button>
+            <button id="stop-video-btn" disabled>Stop Camera</button>
+        </div>
+
+        <div class="video-container" id="video-container">
+            <div class="video-wrapper">
+                <video id="video-element" autoplay muted playsinline></video>
+                <canvas id="video-overlay"></canvas>
+            </div>
+
+            <div class="svg-overlay-container">
+                <div id="svg-overlay"></div>
+            </div>
+
+            <div class="info-panel">
+                <h3>About Self-Boundaries</h3>
+                <p>
+                    The Bateman-Reiss characteristic flow traces curves along gradient fields:
+                    dx/dt = u_x(x,y,t), dy/dt = u_y(x,y,t)
+                </p>
+                <p>
+                    These are not edges—they are identity curves that remain coherent while the field changes.
+                    They loop, maintain coherence, and survive perturbation. This is a mathematical model of
+                    "I am here, now," generated from your living body.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="br_livecam_demo.js"></script>
+</body>
+</html>
+

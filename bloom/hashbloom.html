@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HashBloom - File to Fractal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff88;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            background: linear-gradient(45deg, #00ff88, #00aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #00ff88;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            background: rgba(0, 255, 136, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            border-color: #00aaff;
+            background: rgba(0, 170, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .drop-zone.dragover {
+            border-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            transform: scale(1.02);
+        }
+
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .drop-zone:hover::before {
+            opacity: 1;
+        }
+
+        .drop-text {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .drop-subtext {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .hash-display {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            text-align: center;
+            margin: 20px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .hash-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .svg-container {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .svg-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .svg-container svg {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #00aaff;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ff88, #00aaff);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            color: #000;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Flow line animations */
+        @keyframes hueRotate {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        @keyframes opacityPulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1.0; }
+        }
+
+        @keyframes drift {
+            0% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(5px) translateY(-3px); }
+            50% { transform: translateX(-3px) translateY(5px); }
+            75% { transform: translateX(2px) translateY(-2px); }
+            100% { transform: translateX(0) translateY(0); }
+        }
+
+        .flow-lines {
+            animation: hueRotate 20s linear infinite;
+        }
+
+        .flow-line-0 { animation: opacityPulse 4s ease-in-out infinite; }
+        .flow-line-1 { animation: opacityPulse 4.2s ease-in-out infinite; }
+        .flow-line-2 { animation: opacityPulse 3.8s ease-in-out infinite; }
+        .flow-line-3 { animation: opacityPulse 4.5s ease-in-out infinite; }
+        .flow-line-4 { animation: opacityPulse 3.9s ease-in-out infinite; }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .drop-zone {
+                padding: 40px 20px;
+            }
+
+            .drop-text {
+                font-size: 1.2rem;
+            }
+
+            .svg-container {
+                min-height: 400px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 HashBloom</h1>
+        <p class="subtitle">Drop any file to bloom its hash into a living fractal</p>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-text">Drop a file here</div>
+            <div class="drop-subtext">or click to browse</div>
+            <input type="file" class="file-input" id="fileInput" accept="*/*">
+        </div>
+
+        <div class="hash-display" id="hashDisplay">
+            <div>SHA-1: <span id="hashValue"></span></div>
+        </div>
+
+        <div class="svg-container" id="svgContainer">
+            <div class="loading" id="loading">
+                🌱 Blooming your file...<br>
+                Computing characteristic curves
+            </div>
+            <div id="svgDisplay"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="downloadBtn" disabled>Download SVG</button>
+            <button class="btn" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="status" id="status">
+            Ready to bloom
+        </div>
+    </div>
+
+    <script type="module">
+        import { HashBloom } from './hashbloom.js';
+
+        class HashBloomUI {
+            constructor() {
+                this.hashBloom = new HashBloom();
+                this.currentResult = null;
+
+                this.initializeElements();
+                this.setupEventListeners();
+            }
+
+            initializeElements() {
+                this.dropZone = document.getElementById('dropZone');
+                this.fileInput = document.getElementById('fileInput');
+                this.hashDisplay = document.getElementById('hashDisplay');
+                this.svgContainer = document.getElementById('svgContainer');
+                this.svgDisplay = document.getElementById('svgDisplay');
+                this.loading = document.getElementById('loading');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.status = document.getElementById('status');
+                this.hashValue = document.getElementById('hashValue');
+            }
+
+            setupEventListeners() {
+                // Drag and drop
+                this.dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.dropZone.classList.add('dragover');
+                });
+
+                this.dropZone.addEventListener('dragleave', () => {
+                    this.dropZone.classList.remove('dragover');
+                });
+
+                this.dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.dropZone.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.processFile(files[0]);
+                    }
+                });
+
+                // File input
+                this.fileInput.addEventListener('change', (e) => {
+                    const files = e.target.files;
+                    if (files.length > 0) {
+                        this.processFile(files[0]);
+                    }
+                });
+
+                // Buttons
+                this.downloadBtn.addEventListener('click', () => this.downloadSVG());
+                this.resetBtn.addEventListener('click', () => this.reset());
+            }
+
+            async processFile(file) {
+                try {
+                    this.setLoading(true);
+                    this.setStatus('Computing SHA-1 hash...');
+
+                    const hashHex = await this.computeSHA1(file);
+                    this.displayHash(hashHex);
+
+                    this.setStatus('Generating characteristic curves...');
+                    const result = await this.hashBloom.generateFromHash(hashHex);
+
+                    this.currentResult = result;
+                    this.displaySVG(result.svg);
+                    this.downloadBtn.disabled = false;
+
+                    this.setStatus(`Bloomed ${result.polylines.length} flow lines from ${result.config.numGaussians} Gaussians`);
+
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    this.setStatus('Error: ' + error.message);
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            async computeSHA1(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-1', arrayBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            displayHash(hashHex) {
+                this.hashValue.textContent = hashHex;
+                this.hashDisplay.classList.add('visible');
+            }
+
+            displaySVG(svgString) {
+                this.svgDisplay.innerHTML = svgString;
+                this.svgContainer.classList.add('visible');
+            }
+
+            downloadSVG() {
+                if (!this.currentResult) return;
+
+                const blob = new Blob([this.currentResult.svg], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hashbloom_${this.currentResult.hash.substring(0, 8)}.svg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                URL.revokeObjectURL(url);
+            }
+
+            reset() {
+                this.fileInput.value = '';
+                this.currentResult = null;
+                this.hashDisplay.classList.remove('visible');
+                this.svgContainer.classList.remove('visible');
+                this.svgDisplay.innerHTML = '';
+                this.downloadBtn.disabled = true;
+                this.setStatus('Ready to bloom');
+            }
+
+            setLoading(loading) {
+                if (loading) {
+                    this.loading.classList.add('visible');
+                } else {
+                    this.loading.classList.remove('visible');
+                }
+            }
+
+            setStatus(message) {
+                this.status.textContent = message;
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new HashBloomUI();
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZP Functor: Symbolic ⟷ Geometric Bridge</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
+    h1, h2 {
+      color: #4a9eff;
+    }
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #1a1a1a;
+      border-left: 3px solid #4a9eff;
+    }
+    .output {
+      background: #0f0f0f;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5aaeff;
+    }
+    .functor { color: #9eff4a; }
+    .geometric { color: #ff9e4a; }
+    .symbolic { color: #ff4a9e; }
+    .riemann { color: #4aff9e; }
+  </style>
+</head>
+<body>
+  <h1>ZP Functor: Functorial Bridge Between Symbolic Systems and Geometric Coordinates</h1>
+  
+  <div class="section">
+    <h2>The Bridge</h2>
+    <p><strong class="functor">Z: Symb → Geo</strong> maps symbolic systems to Riemannian manifolds</p>
+    <p><strong class="functor">Z⁻¹: Geo → Symb</strong> reconstructs symbolic systems from coordinates</p>
+    <p>This is a <strong>paradigm shift</strong> in how we understand symbolic reasoning.</p>
+  </div>
+
+  <div class="section">
+    <h2>Controls</h2>
+    <button onclick="demoFunctor()">Demo ZP Functor</button>
+    <button onclick="demoInverse()">Demo Inverse Functor</button>
+    <button onclick="demoFixedPoint()">Demo Fixed Point</button>
+    <button onclick="demoRiemann()">Demo Riemann Connection</button>
+    <button onclick="demoHeat()">Demo Heat Equation</button>
+    <button onclick="demoFull()">Full Demo</button>
+  </div>
+
+  <div class="section">
+    <h2>Output</h2>
+    <div id="output" class="output">Click a button to run a demo...</div>
+  </div>
+
+  <script type="module">
+    import {
+      SymbolicSystem,
+      GeometricSpace,
+      ZPFunctor,
+      InverseZPFunctor,
+      InformationDistance,
+      RicciCurvature,
+      ZPFixedPoint,
+      PrimeGrammar,
+      RiemannHypothesisGrammar,
+      SymbolicHeatEquation
+    } from '../../src/sageString.js';
+
+    window.zpFunctor = new ZPFunctor();
+    window.inverseFunctor = new InverseZPFunctor();
+    window.infoDistance = new InformationDistance(window.zpFunctor, window.inverseFunctor);
+    window.ricci = new RicciCurvature(window.zpFunctor, window.infoDistance);
+    window.fixedPoint = new ZPFixedPoint(window.zpFunctor, window.inverseFunctor);
+
+    function log(message) {
+      const output = document.getElementById('output');
+      output.textContent += message + '\n';
+    }
+
+    function clear() {
+      document.getElementById('output').textContent = '';
+    }
+
+    window.demoFunctor = function() {
+      clear();
+      log('=== ZP Functor: Symb → Geo ===\n');
+      
+      // Create a symbolic system
+      const system = new SymbolicSystem({
+        id: Symbol('TestSystem')
+      });
+      system.addRule('a', 'b', 1.0);
+      system.addRule('b', '[c]', 1.0);
+      system.addRule('[c]', '{d}', 1.0);
+      
+      log('Symbolic System:');
+      log(`  Alphabet: ${Array.from(system.alphabet).join(', ') || 'empty'}`);
+      log(`  Rules: ${system.rules.length}`);
+      system.rules.forEach((r, i) => {
+        log(`    ${i + 1}. ${r.lhs} → ${r.rhs} (weight: ${r.weight})`);
+      });
+      
+      // Apply functor
+      log('\nApplying ZP Functor...');
+      const geo = window.zpFunctor.apply(system);
+      
+      log('\nGeometric Space:');
+      log(`  Basepoint: ${geo.basepoint}`);
+      log(`  ZP Coordinate: ${geo.zpStructure.coordinate.toFixed(6)}`);
+      
+      // Test metric
+      const x = 0.5;
+      const y = 1.0;
+      const dist = geo.distance(x, y);
+      log(`  Distance g(${x}, ${y}) = ${dist.toFixed(6)}`);
+    };
+
+    window.demoInverse = function() {
+      clear();
+      log('=== Inverse ZP Functor: Geo → Symb ===\n');
+      
+      // Create geometric space
+      const geo = new GeometricSpace({
+        basepoint: 0,
+        coordinate: 0.5772156649015329 // Euler-Mascheroni constant
+      });
+      
+      log('Geometric Space:');
+      log(`  Coordinate: ${geo.zpStructure.coordinate.toFixed(6)}`);
+      log(`  (Euler-Mascheroni constant γ)`);
+      
+      // Apply inverse functor
+      log('\nApplying Inverse ZP Functor...');
+      const system = window.inverseFunctor.apply(geo);
+      
+      log('\nReconstructed Symbolic System:');
+      log(`  Rules: ${system.rules.length}`);
+      system.rules.forEach((r, i) => {
+        log(`    ${i + 1}. ${r.lhs} → ${r.rhs} (weight: ${r.weight.toFixed(3)})`);
+      });
+      
+      // Verify round-trip
+      log('\nVerifying Round-Trip:');
+      const geo2 = window.zpFunctor.apply(system);
+      log(`  Original coordinate: ${geo.zpStructure.coordinate.toFixed(6)}`);
+      log(`  Reconstructed coordinate: ${geo2.zpStructure.coordinate.toFixed(6)}`);
+      log(`  Difference: ${Math.abs(geo.zpStructure.coordinate - geo2.zpStructure.coordinate).toFixed(6)}`);
+    };
+
+    window.demoFixedPoint = function() {
+      clear();
+      log('=== Fixed Point: Symbolic Renormalization Flow ===\n');
+      log('S_{n+1} = Z⁻¹(Z(S_n)) → S*\n');
+      
+      // Create initial system
+      const system = new SymbolicSystem({
+        id: Symbol('InitialSystem')
+      });
+      system.addRule('start', '[a]', 1.0);
+      system.addRule('[a]', '{b}', 1.0);
+      system.addRule('{b}', '(c)', 1.0);
+      
+      log('Initial System:');
+      log(`  Rules: ${system.rules.length}`);
+      
+      // Compute fixed point
+      log('\nComputing fixed point...');
+      const result = window.fixedPoint.compute(system);
+      
+      log(`\nFixed Point Result:`);
+      log(`  Converged: ${result.converged ? 'YES' : 'NO'}`);
+      log(`  Iterations: ${result.iterations}`);
+      log(`  Final Rules: ${result.fixedPoint.rules.length}`);
+      
+      if (result.history.length > 0) {
+        log('\nConvergence History:');
+        result.history.slice(0, 5).forEach((s, i) => {
+          const geo = window.zpFunctor.apply(s);
+          log(`  Step ${i}: coordinate = ${geo.zpStructure.coordinate.toFixed(6)}`);
+        });
+      }
+    };
+
+    window.demoRiemann = function() {
+      clear();
+      log('=== Riemann-ZP Connection ===\n');
+      log('Primes → ζ → Zeros → Z⁻¹ → Prime Grammar\n');
+      
+      // Create prime grammar
+      const primeGrammar = new PrimeGrammar({ maxPrime: 50 });
+      
+      log('Prime Grammar:');
+      log(`  Primes: ${primeGrammar.primes.length} (up to ${Math.max(...primeGrammar.primes)})`);
+      log(`  Rules: ${primeGrammar.rules.length}`);
+      log(`  Axiom: ⊢ ${primeGrammar.axiom} (${primeGrammar.axiomIsFalse ? 'FALSE - creates tension' : 'TRUE'})`);
+      
+      // Apply functor
+      log('\nApplying ZP Functor to Prime Grammar...');
+      const geo = window.zpFunctor.apply(primeGrammar);
+      const coordinate = geo.zpStructure.coordinate;
+      
+      log(`\nZP Coordinate: ${coordinate.toFixed(6)}`);
+      log(`Euler-Mascheroni γ: ${primeGrammar.gamma.toFixed(6)}`);
+      log(`Match: ${primeGrammar.checkGammaCoordinate(coordinate) ? '✓ YES' : '✗ NO'}`);
+      
+      // Riemann hypothesis grammar
+      log('\n--- Riemann Hypothesis Grammar ---');
+      const rhGrammar = new RiemannHypothesisGrammar();
+      
+      log('Riemann Hypothesis Grammar:');
+      log(`  Rules: ${rhGrammar.rules.length}`);
+      log(`  Critical Line: Re(s) = ${rhGrammar.criticalLine}`);
+      
+      const rhGeo = window.zpFunctor.apply(rhGrammar);
+      const rhCoord = rhGeo.zpStructure.coordinate;
+      
+      log(`\nZP Coordinate: ${rhCoord.toFixed(6)}`);
+      log(`On Critical Line: ${rhGrammar.checkCriticalLine(rhCoord) ? '✓ YES' : '✗ NO'}`);
+    };
+
+    window.demoHeat = function() {
+      clear();
+      log('=== Heat Equation on Symbolic Space ===\n');
+      log('∂S/∂t = Δ_ZP S (logical diffusion)\n');
+      
+      // Create systems
+      const system1 = new SymbolicSystem({ id: Symbol('S1') });
+      system1.addRule('a', 'b', 1.0);
+      
+      const system2 = new SymbolicSystem({ id: Symbol('S2') });
+      system2.addRule('b', '[c]', 1.0);
+      
+      const system3 = new SymbolicSystem({ id: Symbol('S3') });
+      system3.addRule('[c]', '{d}', 1.0);
+      
+      const allSystems = [system1, system2, system3];
+      
+      const heat = new SymbolicHeatEquation(window.zpFunctor, window.infoDistance);
+      
+      log('Initial Systems:');
+      allSystems.forEach((s, i) => {
+        const geo = window.zpFunctor.apply(s);
+        log(`  S${i + 1}: coordinate = ${geo.zpStructure.coordinate.toFixed(6)}`);
+      });
+      
+      // Evolve system1
+      log('\nEvolving S₁ via heat equation...');
+      const neighbors = heat.findNeighbors(system1, allSystems, 0.5);
+      log(`  Neighbors: ${neighbors.length}`);
+      
+      const evolved = heat.evolve(system1, neighbors, 0.1);
+      const evolvedGeo = window.zpFunctor.apply(evolved);
+      
+      log(`\nEvolved System:`);
+      log(`  Original coordinate: ${window.zpFunctor.apply(system1).zpStructure.coordinate.toFixed(6)}`);
+      log(`  Evolved coordinate: ${evolvedGeo.zpStructure.coordinate.toFixed(6)}`);
+    };
+
+    window.demoFull = function() {
+      clear();
+      log('=== Full ZP Functor Demo ===\n');
+      
+      log('1. Functor Application (Symb → Geo)');
+      window.demoFunctor();
+      log('\n\n2. Inverse Functor (Geo → Symb)');
+      window.demoInverse();
+      log('\n\n3. Fixed Point Renormalization');
+      window.demoFixedPoint();
+      log('\n\n4. Riemann Connection');
+      window.demoRiemann();
+      log('\n\n5. Heat Equation');
+      window.demoHeat();
+      
+      log('\n\n=== Summary ===');
+      log('The ZP functor creates a functorial bridge:');
+      log('  • Symbolic systems ⟷ Geometric coordinates');
+      log('  • Information distance measures computational divergence');
+      log('  • Ricci curvature measures logical coherence');
+      log('  • Fixed point flow finds canonical forms');
+      log('  • Heat equation describes logical diffusion');
+      log('\nThis is a paradigm shift in symbolic reasoning.');
+    };
+  </script>
+</body>
+</html>
+
