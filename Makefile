@@ -69,30 +69,21 @@ open: scripts/check_server_status.sh
 # Open quantum learning demo
 quantum:
 	@echo "⚛️  Opening Quantum Learning demo..."
-	@if [ -f $(READY_FILE) ]; then \
-		READY_CONTENT=$$(cat $(READY_FILE) 2>/dev/null); \
-		if [[ $$READY_CONTENT =~ READY:$(PORT):[0-9]+:([0-9]+) ]]; then \
-			SERVER_PID="$${BASH_REMATCH[1]}"; \
-			if kill -0 "$$SERVER_PID" 2>/dev/null; then \
-				echo "✅ Server is running - opening quantum learning demo..."; \
-				open http://localhost:$(PORT)/demos/quantum_learning.html; \
-			else \
-				echo "❌ Server not running - starting server first..."; \
-				@$(MAKE) server & \
-				sleep 2; \
-				open http://localhost:$(PORT)/demos/quantum_learning.html; \
-			fi; \
-		else \
-			echo "⚠️  Starting server..."; \
-			@$(MAKE) server & \
-			sleep 2; \
-			open http://localhost:$(PORT)/demos/quantum_learning.html; \
+	@if command -v python3 >/dev/null 2>&1; then \
+		if ! curl -s http://localhost:$(PORT) >/dev/null 2>&1; then \
+			echo "📡 Starting HTTP server on port $(PORT)..."; \
+			python3 server.py $(PORT) >/dev/null 2>&1 & \
+			SERVER_PID=$$!; \
+			echo $$SERVER_PID > .server_pid; \
+			sleep 1; \
 		fi; \
-	else \
-		echo "⚠️  Starting server..."; \
-		@$(MAKE) server & \
-		sleep 2; \
+		echo "🌐 Opening quantum learning demo..."; \
 		open http://localhost:$(PORT)/demos/quantum_learning.html; \
+		echo "✅ Quantum learning demo opened!"; \
+		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
+	else \
+		echo "❌ Python3 not found. Please install Python 3."; \
+		exit 1; \
 	fi
 
 # Clean up any background processes and files
@@ -129,4 +120,5 @@ help:
 	@echo "  make demo     # Same as default"
 	@echo "  make server   # Start server only"
 	@echo "  make open     # Open browser to demo"
+	@echo "  make quantum  # Open quantum learning demo"
 	@echo "  make clean    # Stop server and clean files"
