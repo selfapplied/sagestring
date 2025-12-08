@@ -1,6 +1,6 @@
 # Guardian Consciousness Ecology - Development Makefile
 
-.PHONY: server demo clean help open quantum
+.PHONY: server demo clean help open quantum ecology test test-e2e
 
 # Configuration
 PORT := 10000
@@ -86,6 +86,26 @@ quantum:
 		exit 1; \
 	fi
 
+# Open ecological energy landscape
+ecology:
+	@echo "🌊 Opening Ecological Energy Landscape..."
+	@if command -v python3 >/dev/null 2>&1; then \
+		if ! curl -s http://localhost:$(PORT) >/dev/null 2>&1; then \
+			echo "📡 Starting HTTP server on port $(PORT)..."; \
+			python3 server.py $(PORT) >/dev/null 2>&1 & \
+			SERVER_PID=$$!; \
+			echo $$SERVER_PID > .server_pid; \
+			sleep 1; \
+		fi; \
+		echo "🌐 Opening ecological energy landscape..."; \
+		open http://localhost:$(PORT)/demos/ecological_energy_landscape.html; \
+		echo "✅ Ecological energy landscape opened!"; \
+		echo "💡 Press Ctrl+C in the terminal to stop the server"; \
+	else \
+		echo "❌ Python3 not found. Please install Python 3."; \
+		exit 1; \
+	fi
+
 # Clean up any background processes and files
 clean:
 	@echo "🧹 Cleaning up background processes and files..."
@@ -103,22 +123,34 @@ clean:
 	@rm -f $(READY_FILE)
 	@echo "✅ Cleanup complete"
 
+# Run tests (E2E)
+test: test-e2e
+
+# Run E2E tests
+test-e2e:
+	@npm run test:e2e
+
 # Show available commands
 help:
 	@echo "🤖 Guardian Consciousness Ecology Makefile"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  demo    - Start server and open guardian demo (default)"
-	@echo "  server  - Start HTTP server only"
-	@echo "  open    - Open demo page (verifies server is running)"
-	@echo "  quantum - Open quantum learning demo"
-	@echo "  clean   - Stop background server processes and clean files"
-	@echo "  help    - Show this help message"
+	@echo "  demo            - Start server and open guardian demo (default)"
+	@echo "  server          - Start HTTP server only"
+	@echo "  open            - Open demo page (verifies server is running)"
+	@echo "  quantum         - Open quantum learning demo"
+	@echo "  ecology         - Open ecological energy landscape"
+	@echo "  test            - Run E2E tests"
+	@echo "  test-e2e        - Run E2E tests (alias)"
+	@echo "  clean           - Stop background server processes and clean files"
+	@echo "  help            - Show this help message"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make          # Start everything"
-	@echo "  make demo     # Same as default"
-	@echo "  make server   # Start server only"
-	@echo "  make open     # Open browser to demo"
-	@echo "  make quantum  # Open quantum learning demo"
-	@echo "  make clean    # Stop server and clean files"
+	@echo "  make              # Start everything"
+	@echo "  make demo         # Same as default"
+	@echo "  make server       # Start server only"
+	@echo "  make open         # Open browser to demo"
+	@echo "  make quantum      # Open quantum learning demo"
+	@echo "  make ecology      # Open ecological energy landscape"
+	@echo "  make test         # Run E2E tests"
+	@echo "  make clean        # Stop server and clean files"
