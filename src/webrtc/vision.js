@@ -176,4 +176,6 @@ class Vision {
   }
 }
 
-export { Vision };
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { Vision };
+}
