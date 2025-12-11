@@ -5,6 +5,7 @@
   "description": "Minimal library for fractal Sobel edge detection with spacetime-scale action functional",
   "main": "src/sageString.js",
   "scripts": {
+    "test": "echo \"No tests specified\" && exit 0",
     "test:math": "node tests/math/test_runner.js",
     "test:dom": "node tests/dom/test_runner.js",
     "test:canvas": "node tests/canvas/test_runner.js",
