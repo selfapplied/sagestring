@@ -5,6 +5,7 @@
   "description": "Minimal library for fractal Sobel edge detection with spacetime-scale action functional",
   "main": "src/sageString.js",
   "scripts": {
+    "test": "jest",
     "test:math": "node tests/math/test_runner.js",
     "test:dom": "node tests/dom/test_runner.js",
     "test:canvas": "node tests/canvas/test_runner.js",
@@ -23,7 +24,8 @@
   "author": "Joel",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "jest": "^29.6.1"
   },
   "dependencies": {
     "playwright": "^1.57.0"
